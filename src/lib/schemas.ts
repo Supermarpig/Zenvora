@@ -10,9 +10,9 @@ export const projectSchema = z.object({
 
 export type Project = z.infer<typeof projectSchema>;
 
-export const createProjectSchema = projectSchema.pick({
-  name: true,
-  description: true,
+export const createProjectSchema = z.object({
+  name: z.string().min(1, "專案名稱不可為空"),
+  description: z.string().default(""),
 });
 
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;
