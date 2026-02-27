@@ -6,6 +6,7 @@ import { useProjectStore } from "@/stores/use-project-store";
 import { useFrameStore } from "@/stores/use-frame-store";
 import { StoryboardCanvas } from "@/components/storyboard/storyboard-canvas";
 import { StoryboardToolbar } from "@/components/storyboard/storyboard-toolbar";
+import { FrameEditor } from "@/components/storyboard/frame-editor";
 
 export default function StoryboardPage({
   params,
@@ -34,6 +35,7 @@ export default function StoryboardPage({
       <div className="flex-1">
         <StoryboardCanvas projectId={id} />
       </div>
+      <FrameEditor />
     </div>
   );
 }
