@@ -1,6 +1,6 @@
 "use client";
 
-import { use } from "react";
+import { use, useMemo } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -16,7 +16,14 @@ export default function PromptsPage({
 }) {
   const { id } = use(params);
   const project = useProjectStore((s) => s.getProject(id));
-  const frames = useFrameStore((s) => s.getFramesByProject(id));
+  const allFrames = useFrameStore((s) => s.frames);
+  const frames = useMemo(
+    () =>
+      allFrames
+        .filter((f) => f.projectId === id)
+        .sort((a, b) => a.order - b.order),
+    [allFrames, id]
+  );
 
   if (!project) {
     notFound();

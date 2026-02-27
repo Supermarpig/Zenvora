@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import {
   ReactFlow,
   Background,
@@ -56,21 +56,22 @@ function framesToEdges(
 }
 
 export function StoryboardCanvas({ projectId }: StoryboardCanvasProps) {
-  const frames = useFrameStore((s) => s.getFramesByProject(projectId));
+  const allFrames = useFrameStore((s) => s.frames);
   const selectedFrameId = useFrameStore((s) => s.selectedFrameId);
   const setSelectedFrameId = useFrameStore((s) => s.setSelectedFrameId);
 
-  const initialNodes = useMemo(
-    () => framesToNodes(frames, selectedFrameId),
-    [frames, selectedFrameId]
+  const frames = useMemo(
+    () =>
+      allFrames
+        .filter((f) => f.projectId === projectId)
+        .sort((a, b) => a.order - b.order),
+    [allFrames, projectId]
   );
-  const initialEdges = useMemo(() => framesToEdges(frames), [frames]);
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node<FrameNodeData>>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
-  // Keep nodes/edges in sync with store
-  useMemo(() => {
+  useEffect(() => {
     setNodes(framesToNodes(frames, selectedFrameId));
     setEdges(framesToEdges(frames));
   }, [frames, selectedFrameId, setNodes, setEdges]);

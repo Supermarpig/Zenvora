@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import { Trash2, Film } from "lucide-react";
 import { toast } from "sonner";
@@ -18,7 +19,11 @@ import type { Project } from "@/lib/schemas";
 export function ProjectCard({ project }: { project: Project }) {
   const deleteProject = useProjectStore((s) => s.deleteProject);
   const deleteFramesByProject = useFrameStore((s) => s.deleteFramesByProject);
-  const frames = useFrameStore((s) => s.getFramesByProject(project.id));
+  const allFrames = useFrameStore((s) => s.frames);
+  const frames = useMemo(
+    () => allFrames.filter((f) => f.projectId === project.id),
+    [allFrames, project.id]
+  );
 
   function handleDelete(e: React.MouseEvent) {
     e.preventDefault();
