@@ -11,6 +11,7 @@ interface FrameState {
   setSelectedFrameId: (id: string | null) => void;
 
   addFrame: (projectId: string, input?: Partial<CreateFrameInput>) => Frame;
+  importFrames: (frames: Frame[]) => void;
   updateFrame: (id: string, data: Partial<Frame>) => void;
   deleteFrame: (id: string) => void;
   deleteFramesByProject: (projectId: string) => void;
@@ -53,6 +54,14 @@ export const useFrameStore = create<FrameState>()(
         };
         set((state) => ({ frames: [...state.frames, frame] }));
         return frame;
+      },
+
+      importFrames: (newFrames) => {
+        set((state) => {
+          const existingIds = new Set(state.frames.map((f) => f.id));
+          const toAdd = newFrames.filter((f) => !existingIds.has(f.id));
+          return { frames: [...state.frames, ...toAdd] };
+        });
       },
 
       updateFrame: (id, data) => {

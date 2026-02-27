@@ -5,6 +5,7 @@ import type { Project, CreateProjectInput } from "@/lib/schemas";
 interface ProjectState {
   projects: Project[];
   addProject: (input: CreateProjectInput) => Project;
+  importProject: (project: Project) => void;
   updateProject: (id: string, data: Partial<Project>) => void;
   deleteProject: (id: string) => void;
   getProject: (id: string) => Project | undefined;
@@ -26,6 +27,13 @@ export const useProjectStore = create<ProjectState>()(
         };
         set((state) => ({ projects: [...state.projects, project] }));
         return project;
+      },
+
+      importProject: (project) => {
+        const exists = get().projects.some((p) => p.id === project.id);
+        if (!exists) {
+          set((state) => ({ projects: [...state.projects, project] }));
+        }
       },
 
       updateProject: (id, data) => {

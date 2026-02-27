@@ -16,11 +16,8 @@ export const moodOptions = MOOD_OPTIONS.map((value) => ({
 }));
 
 export const modelOptions = [
-  { value: "gemini-2.5-flash-image", label: "Flash (2 credits)", credits: 2 },
-  { value: "gemini-2.5-flash-image-hd", label: "Flash HD (5 credits)", credits: 5 },
-  { value: "gemini-3-pro-image-preview", label: "Pro (10 credits)", credits: 10 },
-  { value: "gemini-3-pro-image-preview-2k", label: "Pro 2K (10 credits)", credits: 10 },
-  { value: "gemini-3-pro-image-preview-4k", label: "Pro 4K (20 credits)", credits: 20 },
+  { value: "gemini-2.5-flash-image", label: "Gemini 2.5 Flash（快速）" },
+  { value: "gemini-3-pro-image-preview", label: "Gemini 3 Pro（高品質）" },
 ] as const;
 
 export const imageSizeOptions = [

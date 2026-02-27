@@ -9,7 +9,7 @@ import type { Frame } from "@/lib/schemas";
 
 export function PromptRow({ frame }: { frame: Frame }) {
   const [thumbnail, setThumbnail] = useState<string | null>(null);
-  const prompt = buildSeedancePrompt(frame);
+  const seedancePrompt = buildSeedancePrompt(frame);
 
   useEffect(() => {
     if (frame.imageBase64Key) {
@@ -19,10 +19,10 @@ export function PromptRow({ frame }: { frame: Frame }) {
 
   return (
     <TableRow>
-      <TableCell className="w-12 text-center font-medium">
+      <TableCell className="w-12 text-center font-medium align-top pt-4">
         {frame.order + 1}
       </TableCell>
-      <TableCell className="w-24">
+      <TableCell className="w-24 align-top pt-4">
         {thumbnail ? (
           <img
             src={thumbnail}
@@ -35,14 +35,53 @@ export function PromptRow({ frame }: { frame: Frame }) {
           </div>
         )}
       </TableCell>
-      <TableCell className="max-w-xs">
-        <p className="text-sm leading-relaxed">{prompt}</p>
+      <TableCell>
+        <div className="space-y-3">
+          <div>
+            <div className="mb-1 flex items-center gap-2">
+              <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                生圖 Prompt
+              </span>
+              <CopyButton text={frame.prompt} />
+            </div>
+            <p className="text-sm leading-relaxed text-foreground">
+              {frame.prompt}
+            </p>
+          </div>
+
+          {(frame.speaker || frame.dialogue) && (
+            <div>
+              <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900 dark:text-amber-300">
+                台詞
+              </span>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {frame.speaker && (
+                  <span className="font-medium text-foreground">{frame.speaker}：</span>
+                )}
+                {frame.dialogue}
+              </p>
+            </div>
+          )}
+
+          <div>
+            <div className="mb-1 flex items-center gap-2">
+              <span className="rounded bg-green-100 px-1.5 py-0.5 text-[10px] font-semibold text-green-700 dark:bg-green-900 dark:text-green-300">
+                Seedance 提示詞
+              </span>
+              <CopyButton text={seedancePrompt} />
+            </div>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              {seedancePrompt}
+            </p>
+          </div>
+        </div>
       </TableCell>
-      <TableCell className="w-16 text-center">
-        {frame.duration}s
-      </TableCell>
-      <TableCell className="w-12">
-        <CopyButton text={prompt} />
+      <TableCell className="w-20 text-center align-top pt-4">
+        <div className="space-y-1 text-xs text-muted-foreground">
+          <p className="font-medium text-foreground">{frame.duration}s</p>
+          <p>{frame.cameraMovement}</p>
+          <p>{frame.style}</p>
+        </div>
       </TableCell>
     </TableRow>
   );

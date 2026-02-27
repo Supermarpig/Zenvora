@@ -1,0 +1,211 @@
+import type { Project, Frame } from "./schemas";
+
+const PROJECT_ID = "swag-airline-2026";
+
+export const seedProject: Project = {
+  id: PROJECT_ID,
+  name: "SWAG 航空 2026 春酒開場影片",
+  description:
+    "航空主題春酒開場影片，分為四階段：登機須知、機艙設施、航程重點、特別廣播（機長進場）",
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+};
+
+export const seedFrames: Frame[] = [
+  {
+    id: "frame-01",
+    projectId: PROJECT_ID,
+    order: 0,
+    prompt:
+      "Luxurious airplane cabin interior with warm golden lighting, elegant flight attendants standing at the entrance welcoming passengers, SWAG airline logo on the wall, cinematic wide shot",
+    speaker: "空服員",
+    dialogue: "歡迎搭乘 SWAG 航空公司 2026 號班機，由台北 CHALET V 出發",
+    cameraMovement: "Dolly Zoom",
+    duration: 8,
+    style: "Cinematic",
+    mood: "Warm/Golden Hour",
+  },
+  {
+    id: "frame-02",
+    projectId: PROJECT_ID,
+    order: 1,
+    prompt:
+      "Two coworkers sitting next to each other on airplane seats, one giving an awkward polite smile, the other pretending to read a safety card, comedic office humor atmosphere",
+    speaker: "空服員",
+    dialogue: "若您發現隔壁乘客是不認識的主管，請保持尷尬而不失禮貌的微笑",
+    cameraMovement: "Pan Right",
+    duration: 7,
+    style: "Cinematic",
+    mood: "Bright/Cheerful",
+  },
+  {
+    id: "frame-03",
+    projectId: PROJECT_ID,
+    order: 2,
+    prompt:
+      "A handsome man and beautiful woman sitting next to each other on an airplane, the woman blushing and the plane shaking slightly, romantic comedy movie style, soft bokeh lighting",
+    speaker: "空服員",
+    dialogue: "現在感受到的劇烈晃動並非亂流，而是您心跳加速的正常反應",
+    cameraMovement: "Zoom In",
+    duration: 6,
+    style: "Cinematic",
+    mood: "Soft/Dreamy",
+  },
+  {
+    id: "frame-04",
+    projectId: PROJECT_ID,
+    order: 3,
+    prompt:
+      "Enthusiastic crowd inside airplane cabin clapping hands and cheering wildly, confetti in the air, party atmosphere, dynamic handheld camera, concert energy",
+    speaker: "主持人",
+    dialogue: "請用最瘋狂的尖叫聲與掌聲，填滿整個機艙",
+    cameraMovement: "Handheld",
+    duration: 5,
+    style: "Cinematic",
+    mood: "Bright/Cheerful",
+  },
+  {
+    id: "frame-05",
+    projectId: PROJECT_ID,
+    order: 4,
+    prompt:
+      "Elegant gourmet buffet station on the left side of a luxury airplane cabin, beautifully plated dishes with warm spotlights, passengers lining up orderly, food photography style",
+    speaker: "空服員",
+    dialogue: "能源補給區位於客艙左側，請自行前往補充燃料",
+    cameraMovement: "Tracking Shot",
+    duration: 8,
+    style: "Cinematic",
+    mood: "Warm/Golden Hour",
+  },
+  {
+    id: "frame-06",
+    projectId: PROJECT_ID,
+    order: 5,
+    prompt:
+      "Airplane restroom sign glowing blue neon light, a person rushing towards it with comedic urgency, motion blur, humorous atmosphere",
+    speaker: "空服員",
+    dialogue: "所有的使用紀錄與停留時間，絕對不列入年度考核",
+    cameraMovement: "Pan Left",
+    duration: 5,
+    style: "Cinematic",
+    mood: "Bright/Cheerful",
+  },
+  {
+    id: "frame-07",
+    projectId: PROJECT_ID,
+    order: 6,
+    prompt:
+      "A magnificent golden lottery machine spinning inside an airplane cabin, sparkling lights and golden particles flying around, passengers watching in awe, dramatic lighting from above",
+    speaker: "空服員",
+    dialogue: "請特別注意本機最重要的安全設備——抽獎系統",
+    cameraMovement: "Orbit",
+    duration: 8,
+    style: "Cinematic",
+    mood: "Neon/Glow",
+  },
+  {
+    id: "frame-08",
+    projectId: PROJECT_ID,
+    order: 7,
+    prompt:
+      "Cash and red envelopes raining down from airplane ceiling like turbulence, passengers screaming with joy and grabbing money mid-air, chaotic celebration, dramatic slow motion",
+    speaker: "空服員",
+    dialogue: "若航程中出現突發性的現金亂流，請保持冷靜並緊握您的酒杯",
+    cameraMovement: "Crane Shot",
+    duration: 7,
+    style: "Cinematic",
+    mood: "Neon/Glow",
+  },
+  {
+    id: "frame-09",
+    projectId: PROJECT_ID,
+    order: 8,
+    prompt:
+      "International fashion runway inside a wide airplane cabin, models from different countries walking the aisle in stunning outfits, spotlights and camera flashes, glamorous atmosphere",
+    speaker: "旁白",
+    dialogue: "飛越環球領空，欣賞來自各國嘉賓的精彩走秀",
+    cameraMovement: "Tracking Shot",
+    duration: 8,
+    style: "Cinematic",
+    mood: "Warm/Golden Hour",
+  },
+  {
+    id: "frame-10",
+    projectId: PROJECT_ID,
+    order: 9,
+    prompt:
+      "People intensely focused on mobile phones playing a quiz game, competitive expressions, colorful Kahoot-style interface glowing on screens, airplane cabin background, dynamic angles",
+    speaker: "旁白",
+    dialogue: "進入腦力空戰 Kahoot 區域，答錯不會被彈射出艙",
+    cameraMovement: "Handheld",
+    duration: 6,
+    style: "Cinematic",
+    mood: "Bright/Cheerful",
+  },
+  {
+    id: "frame-11",
+    projectId: PROJECT_ID,
+    order: 10,
+    prompt:
+      "Bingo cards floating in the air inside airplane cabin, passengers frantically marking numbers, dramatic spotlight on the bingo caller, competitive game show atmosphere",
+    speaker: "旁白",
+    dialogue: "賓果大亂鬥",
+    cameraMovement: "Zoom In",
+    duration: 5,
+    style: "Cinematic",
+    mood: "Bright/Cheerful",
+  },
+  {
+    id: "frame-12",
+    projectId: PROJECT_ID,
+    order: 11,
+    prompt:
+      "Passengers holding random objects above their heads ready for a challenge, chaotic fun atmosphere inside airplane, special ops military style lighting with green tint, action movie feel",
+    speaker: "旁白",
+    dialogue: "特種任務禁區，請隨時準備好身邊任何能派上用場的物品",
+    cameraMovement: "Handheld",
+    duration: 6,
+    style: "Cinematic",
+    mood: "Moody/Dramatic",
+  },
+  {
+    id: "frame-13",
+    projectId: PROJECT_ID,
+    order: 12,
+    prompt:
+      "Giant red envelopes with golden Chinese characters descending from above like bombs on a radar screen, passengers holding on to their seats, airplane shaking, epic cinematic moment",
+    speaker: "旁白",
+    dialogue: "進入大獎雷達區，紅包降落的力道可能會震碎您的理智",
+    cameraMovement: "Crane Shot",
+    duration: 8,
+    style: "Cinematic",
+    mood: "Neon/Glow",
+  },
+  {
+    id: "frame-14",
+    projectId: PROJECT_ID,
+    order: 13,
+    prompt:
+      "TV static and radio interference visual effect transitioning to an emergency broadcast screen, red warning lights flashing in airplane cockpit, tense atmosphere, thriller movie style",
+    speaker: "威力",
+    dialogue:
+      "Mayday! Mayday! 酒精油箱竟然顯示為零！已嚴重違反航空法第 87 條！",
+    cameraMovement: "Zoom In",
+    duration: 8,
+    style: "Cinematic",
+    mood: "Dark/Horror",
+  },
+  {
+    id: "frame-15",
+    projectId: PROJECT_ID,
+    order: 14,
+    prompt:
+      "A confident pilot in aviator sunglasses walking through dramatic fog and backlit by golden light, Top Gun movie style entrance, slow motion, leather jacket, epic hero shot, smoke machine effect",
+    speaker: "Sam",
+    dialogue: "（Top Gun Anthem 音樂，機長帥氣入場）",
+    cameraMovement: "Dolly Zoom",
+    duration: 10,
+    style: "Cinematic",
+    mood: "Moody/Dramatic",
+  },
+];

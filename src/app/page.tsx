@@ -1,12 +1,27 @@
 "use client";
 
-import { Clapperboard } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Clapperboard, FileDown } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import { useProjectStore } from "@/stores/use-project-store";
+import { useFrameStore } from "@/stores/use-frame-store";
 import { ProjectCard } from "@/components/project/project-card";
 import { CreateProjectDialog } from "@/components/project/create-project-dialog";
+import { seedProject, seedFrames } from "@/lib/seed-data";
 
 export default function HomePage() {
   const projects = useProjectStore((s) => s.projects);
+  const importProject = useProjectStore((s) => s.importProject);
+  const importFrames = useFrameStore((s) => s.importFrames);
+  const router = useRouter();
+
+  function handleLoadSeed() {
+    importProject(seedProject);
+    importFrames(seedFrames);
+    toast.success(`已載入「${seedProject.name}」，共 ${seedFrames.length} 個分鏡`);
+    router.push(`/project/${seedProject.id}`);
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -16,7 +31,13 @@ export default function HomePage() {
             <Clapperboard className="h-6 w-6" />
             <h1 className="text-xl font-bold">FrameForge</h1>
           </div>
-          <CreateProjectDialog />
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleLoadSeed}>
+              <FileDown className="mr-1.5 h-4 w-4" />
+              載入範例腳本
+            </Button>
+            <CreateProjectDialog />
+          </div>
         </div>
       </header>
 
@@ -30,7 +51,13 @@ export default function HomePage() {
                 點擊「新增專案」開始你的第一個分鏡腳本
               </p>
             </div>
-            <CreateProjectDialog />
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={handleLoadSeed}>
+                <FileDown className="mr-1.5 h-4 w-4" />
+                載入範例腳本
+              </Button>
+              <CreateProjectDialog />
+            </div>
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

@@ -6,11 +6,8 @@ const generateImageInputSchema = z.object({
   prompt: z.string().min(1, "請輸入圖片描述"),
   model: z
     .enum([
-      "gemini-3-pro-image-preview-4k",
-      "gemini-3-pro-image-preview-2k",
-      "gemini-3-pro-image-preview",
-      "gemini-2.5-flash-image-hd",
       "gemini-2.5-flash-image",
+      "gemini-3-pro-image-preview",
     ])
     .default("gemini-2.5-flash-image"),
   imageSize: z
@@ -20,21 +17,13 @@ const generateImageInputSchema = z.object({
 
 export type GenerateImageInput = z.infer<typeof generateImageInputSchema>;
 
-export type GenerateImageResult = {
-  success: true;
-  base64: string;
-  creditCost: number;
-} | {
-  success: false;
-  error: string;
-};
+export type GenerateImageResult =
+  | { success: true; base64: string; creditCost: number }
+  | { success: false; error: string };
 
 const MODEL_CREDIT_COST: Record<string, number> = {
-  "gemini-3-pro-image-preview-4k": 20,
-  "gemini-3-pro-image-preview-2k": 10,
-  "gemini-3-pro-image-preview": 10,
-  "gemini-2.5-flash-image-hd": 5,
   "gemini-2.5-flash-image": 2,
+  "gemini-3-pro-image-preview": 10,
 };
 
 export async function generateImage(
@@ -45,52 +34,70 @@ export async function generateImage(
     return { success: false, error: parsed.error.issues[0].message };
   }
 
-  const apiKey = process.env.NANO_BANANA_API_KEY;
+  const apiKey = process.env.GOOGLE_AI_API_KEY;
   if (!apiKey || apiKey === "your_api_key_here") {
-    return { success: false, error: "請先設定 NANO_BANANA_API_KEY 環境變數" };
+    return { success: false, error: "請先設定 GOOGLE_AI_API_KEY 環境變數" };
   }
 
+  const { prompt, model, imageSize } = parsed.data;
+  const fullPrompt = `Generate an image in ${imageSize} aspect ratio: ${prompt}`;
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
   try {
-    const res = await fetch("https://api.nanobananaapi.dev/v1/images/generate", {
+    const res = await fetch(url, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        prompt: parsed.data.prompt,
-        num: 1,
-        model: parsed.data.model,
-        image_size: parsed.data.imageSize,
+        contents: [
+          {
+            parts: [{ text: fullPrompt }],
+          },
+        ],
+        generationConfig: {
+          responseModalities: ["IMAGE", "TEXT"],
+        },
       }),
     });
 
     if (!res.ok) {
-      return { success: false, error: `API 錯誤: ${res.status} ${res.statusText}` };
+      const errorBody = await res.text();
+      return {
+        success: false,
+        error: `Google API 錯誤 ${res.status}: ${errorBody.slice(0, 200)}`,
+      };
     }
 
     const json = await res.json();
-    if (json.code !== 0) {
-      return { success: false, error: json.message || "生圖失敗" };
+
+    const candidates = json.candidates;
+    if (!candidates?.length) {
+      return { success: false, error: "API 未回傳任何結果" };
     }
 
-    const imageUrl = Array.isArray(json.data.url)
-      ? json.data.url[0]
-      : json.data.url;
-
-    const imageRes = await fetch(imageUrl);
-    if (!imageRes.ok) {
-      return { success: false, error: "下載圖片失敗" };
+    const parts = candidates[0].content?.parts;
+    if (!parts?.length) {
+      return { success: false, error: "API 回傳格式異常" };
     }
 
-    const buffer = await imageRes.arrayBuffer();
-    const base64 = Buffer.from(buffer).toString("base64");
-    const contentType = imageRes.headers.get("content-type") || "image/png";
+    const imagePart = parts.find(
+      (p: { inlineData?: { mimeType: string; data: string } }) => p.inlineData
+    );
+
+    if (!imagePart?.inlineData) {
+      const textPart = parts.find((p: { text?: string }) => p.text);
+      return {
+        success: false,
+        error: textPart?.text || "未能生成圖片",
+      };
+    }
+
+    const { mimeType, data } = imagePart.inlineData;
 
     return {
       success: true,
-      base64: `data:${contentType};base64,${base64}`,
-      creditCost: MODEL_CREDIT_COST[parsed.data.model] ?? 2,
+      base64: `data:${mimeType};base64,${data}`,
+      creditCost: MODEL_CREDIT_COST[model] ?? 2,
     };
   } catch (err) {
     return {
