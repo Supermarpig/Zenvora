@@ -1,20 +1,39 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+"use client";
 
-export default async function StoryboardPage({
+import { use } from "react";
+import { notFound } from "next/navigation";
+import { useProjectStore } from "@/stores/use-project-store";
+import { useFrameStore } from "@/stores/use-frame-store";
+import { StoryboardCanvas } from "@/components/storyboard/storyboard-canvas";
+import { StoryboardToolbar } from "@/components/storyboard/storyboard-toolbar";
+
+export default function StoryboardPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
+  const { id } = use(params);
+  const project = useProjectStore((s) => s.getProject(id));
+  const addFrame = useFrameStore((s) => s.addFrame);
+
+  if (!project) {
+    notFound();
+  }
+
+  function handleAddFrame() {
+    addFrame(id);
+  }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4">
-      <h1 className="text-2xl font-bold">分鏡畫布 — 專案 {id}</h1>
-      <p className="text-muted-foreground">React Flow 畫布即將在 Phase 4 實作</p>
-      <Button variant="outline" asChild>
-        <Link href="/">返回首頁</Link>
-      </Button>
+    <div className="flex h-screen flex-col">
+      <StoryboardToolbar
+        projectId={id}
+        projectName={project.name}
+        onAddFrame={handleAddFrame}
+      />
+      <div className="flex-1">
+        <StoryboardCanvas projectId={id} />
+      </div>
     </div>
   );
 }
