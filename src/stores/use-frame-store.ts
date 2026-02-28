@@ -11,6 +11,7 @@ interface FrameState {
   setSelectedFrameId: (id: string | null) => void;
 
   addFrame: (projectId: string, input?: Partial<CreateFrameInput>) => Frame;
+  insertFrameAfter: (afterFrameId: string, input?: Partial<CreateFrameInput>) => Frame;
   importFrames: (frames: Frame[]) => void;
   updateFrame: (id: string, data: Partial<Frame>) => void;
   deleteFrame: (id: string) => void;
@@ -53,6 +54,38 @@ export const useFrameStore = create<FrameState>()(
           mood: input?.mood ?? "Moody/Dramatic",
         };
         set((state) => ({ frames: [...state.frames, frame] }));
+        return frame;
+      },
+
+      insertFrameAfter: (afterFrameId, input) => {
+        const afterFrame = get().getFrame(afterFrameId);
+        if (!afterFrame) return get().addFrame("", input);
+
+        const newOrder = afterFrame.order + 1;
+        const frame: Frame = {
+          id: crypto.randomUUID(),
+          projectId: afterFrame.projectId,
+          order: newOrder,
+          prompt: input?.prompt ?? "",
+          dialogue: input?.dialogue ?? "",
+          speaker: input?.speaker ?? "",
+          cameraMovement: input?.cameraMovement ?? afterFrame.cameraMovement,
+          duration: input?.duration ?? afterFrame.duration,
+          style: input?.style ?? afterFrame.style,
+          mood: input?.mood ?? afterFrame.mood,
+        };
+
+        set((state) => ({
+          frames: [
+            ...state.frames.map((f) => {
+              if (f.projectId === afterFrame.projectId && f.order >= newOrder) {
+                return { ...f, order: f.order + 1 };
+              }
+              return f;
+            }),
+            frame,
+          ],
+        }));
         return frame;
       },
 
