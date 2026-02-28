@@ -1,15 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Grid3X3, LayoutGrid } from "lucide-react";
+import { toast } from "sonner";
 import { TableCell, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 import { CopyButton } from "./copy-button";
 import { loadImage } from "@/lib/db";
 import { buildSeedancePrompt } from "@/lib/seedance-prompt";
+import { buildGridPrompt } from "@/lib/storyboard-prompt";
 import type { Frame } from "@/lib/schemas";
 
 export function PromptRow({ frame }: { frame: Frame }) {
   const [thumbnail, setThumbnail] = useState<string | null>(null);
   const seedancePrompt = buildSeedancePrompt(frame);
+
+  async function handleCopyGrid(size: 9 | 25) {
+    const prompt = buildGridPrompt([frame], size);
+    await navigator.clipboard.writeText(prompt);
+    toast.success(`已複製分鏡 #${frame.order + 1} 的 ${size} 宮格 Prompt`);
+  }
 
   useEffect(() => {
     if (frame.imageBase64Key) {
@@ -73,6 +83,17 @@ export function PromptRow({ frame }: { frame: Frame }) {
             <p className="text-sm leading-relaxed text-muted-foreground">
               {seedancePrompt}
             </p>
+          </div>
+
+          <div className="flex gap-2 pt-1">
+            <Button variant="secondary" size="sm" onClick={() => handleCopyGrid(9)}>
+              <Grid3X3 className="mr-1.5 h-3.5 w-3.5" />
+              複製 9 宮格 Prompt
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => handleCopyGrid(25)}>
+              <LayoutGrid className="mr-1.5 h-3.5 w-3.5" />
+              複製 25 宮格 Prompt
+            </Button>
           </div>
         </div>
       </TableCell>

@@ -32,21 +32,23 @@ export default function PromptsPage({
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b">
-        <div className="mx-auto flex max-w-5xl items-center gap-3 px-6 py-4">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href={`/project/${id}`}>
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </Button>
-          <div>
-            <h1 className="text-lg font-semibold">{project.name}</h1>
-            <p className="text-sm text-muted-foreground">
-              Seedance 2.0 提示詞總表
-            </p>
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" asChild>
+              <Link href={`/project/${id}`}>
+                <ArrowLeft className="h-4 w-4" />
+              </Link>
+            </Button>
+            <div>
+              <h1 className="text-lg font-semibold">{project.name}</h1>
+              <p className="text-sm text-muted-foreground">
+                提示詞總表 · 共 {frames.length} 個分鏡
+              </p>
+            </div>
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-5xl px-6 py-8">
+      <main className="mx-auto max-w-6xl px-6 py-8">
         <PromptTable frames={frames} />
       </main>
     </div>

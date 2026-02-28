@@ -1,7 +1,7 @@
 "use client";
 
 import { toast } from "sonner";
-import { Copy } from "lucide-react";
+import { Copy, ImageIcon } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -19,12 +19,20 @@ interface PromptTableProps {
 }
 
 export function PromptTable({ frames }: PromptTableProps) {
-  async function handleCopyAll() {
-    const allPrompts = frames
-      .map((f, i) => `[分鏡 ${i + 1}] ${buildSeedancePrompt(f)}`)
+  async function handleCopyAllImagePrompts() {
+    const all = frames
+      .map((f, i) => `[分鏡 ${i + 1}]\n${f.prompt}`)
       .join("\n\n");
-    await navigator.clipboard.writeText(allPrompts);
-    toast.success(`已複製 ${frames.length} 筆提示詞`);
+    await navigator.clipboard.writeText(all);
+    toast.success(`已複製 ${frames.length} 筆生圖提示詞`);
+  }
+
+  async function handleCopyAllSeedance() {
+    const all = frames
+      .map((f, i) => `[分鏡 ${i + 1}]\n${buildSeedancePrompt(f)}`)
+      .join("\n\n");
+    await navigator.clipboard.writeText(all);
+    toast.success(`已複製 ${frames.length} 筆 Seedance 提示詞`);
   }
 
   if (frames.length === 0) {
@@ -40,10 +48,14 @@ export function PromptTable({ frames }: PromptTableProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <Button variant="outline" onClick={handleCopyAll}>
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" onClick={handleCopyAllImagePrompts}>
+          <ImageIcon className="mr-1.5 h-4 w-4" />
+          複製全部生圖 Prompt
+        </Button>
+        <Button variant="outline" onClick={handleCopyAllSeedance}>
           <Copy className="mr-1.5 h-4 w-4" />
-          一鍵複製全部
+          複製全部 Seedance
         </Button>
       </div>
       <div className="rounded-lg border">
@@ -52,9 +64,8 @@ export function PromptTable({ frames }: PromptTableProps) {
             <TableRow>
               <TableHead className="w-12 text-center">#</TableHead>
               <TableHead className="w-24">縮圖</TableHead>
-              <TableHead>Seedance 提示詞</TableHead>
-              <TableHead className="w-16 text-center">時長</TableHead>
-              <TableHead className="w-12" />
+              <TableHead>內容</TableHead>
+              <TableHead className="w-20 text-center">設定</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
