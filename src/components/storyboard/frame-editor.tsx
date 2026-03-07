@@ -32,7 +32,7 @@ import {
 import { useFrameStore } from "@/stores/use-frame-store";
 import { updateFrameSchema, type Frame } from "@/lib/schemas";
 import { cameraOptions, styleOptions, moodOptions } from "@/lib/seedance-options";
-import { buildSeedancePrompt } from "@/lib/seedance-prompt";
+import { buildVeoPrompt } from "@/lib/veo-prompt";
 import { ImageGenerator } from "./image-generator";
 
 export function FrameEditor() {
@@ -73,7 +73,7 @@ export function FrameEditor() {
 
   const watchedValues = form.watch();
 
-  const seedancePreview = useMemo(() => {
+  const veoPreview = useMemo(() => {
     if (!frame) return "";
     const previewFrame: Frame = {
       ...frame,
@@ -85,7 +85,7 @@ export function FrameEditor() {
       style: watchedValues.style ?? frame.style,
       mood: watchedValues.mood ?? frame.mood,
     };
-    return buildSeedancePrompt(previewFrame);
+    return buildVeoPrompt(previewFrame);
   }, [watchedValues, frame]);
 
   function onSubmit(data: Record<string, unknown>) {
@@ -293,9 +293,9 @@ export function FrameEditor() {
 
               <div className="rounded-lg border bg-muted/50 p-3">
                 <p className="mb-1 text-xs font-medium text-muted-foreground">
-                  Seedance 2.0 提示詞預覽
+                  Veo 3 提示詞預覽
                 </p>
-                <p className="text-sm leading-relaxed">{seedancePreview}</p>
+                <p className="text-sm leading-relaxed">{veoPreview}</p>
               </div>
             </div>
           </>

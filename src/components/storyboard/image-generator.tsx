@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useGenerateImage } from "@/hooks/use-generate-image";
 import { useImageStorage } from "@/hooks/use-image-storage";
 import { useFrameStore } from "@/stores/use-frame-store";
+import { useProjectStore } from "@/stores/use-project-store";
 import { modelOptions, imageSizeOptions } from "@/lib/seedance-options";
 import { buildFrameGridPrompt } from "@/lib/storyboard-prompt";
 import type { GenerateImageInput } from "@/actions/generate-image";
@@ -26,6 +27,8 @@ interface ImageGeneratorProps {
 export function ImageGenerator({ frameId }: ImageGeneratorProps) {
   const frame = useFrameStore((s) => s.getFrame(frameId));
   const updateFrame = useFrameStore((s) => s.updateFrame);
+  const project = useProjectStore((s) => frame ? s.getProject(frame.projectId) : undefined);
+  const characters = project?.characters ?? [];
   const { imageData, isLoading: isLoadingImage, save, remove } = useImageStorage(frameId);
   const generateMutation = useGenerateImage();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -89,7 +92,7 @@ export function ImageGenerator({ frameId }: ImageGeneratorProps) {
 
   async function handleCopyGridPrompt() {
     if (!frame) return;
-    const prompt = buildFrameGridPrompt(frame);
+    const prompt = buildFrameGridPrompt(frame, characters);
     await navigator.clipboard.writeText(prompt);
     toast.success("已複製 9 宮格 Prompt，貼到 Gemini 生成分鏡表圖");
   }

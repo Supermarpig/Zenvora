@@ -104,7 +104,7 @@ export function StoryboardGrid({ frames }: StoryboardGridProps) {
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        每個分鏡都可以「複製 9 宮格 Prompt」→ 貼到 Gemini 生成該場景的 3x3 分鏡圖 → 上傳到 Seedance 生成影片
+        每個分鏡都可以「複製 9 宮格 Prompt」→ 貼到 Gemini 生成該場景的分鏡圖 → 複製 Veo 3 Prompt 搭配分鏡圖生成影片
       </p>
       <div className="grid grid-cols-3 gap-4">
         {frames.map((frame) => (

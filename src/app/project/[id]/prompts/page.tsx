@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PromptTable } from "@/components/prompt/prompt-table";
+import { CharacterManager } from "@/components/storyboard/character-manager";
 import { useProjectStore } from "@/stores/use-project-store";
 import { useFrameStore } from "@/stores/use-frame-store";
 
@@ -46,6 +47,7 @@ export default function PromptsPage({
               </p>
             </div>
           </div>
+          <CharacterManager projectId={id} />
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-6 py-8">

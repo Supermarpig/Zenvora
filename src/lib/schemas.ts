@@ -1,9 +1,18 @@
 import { z } from "zod";
 
+export const characterSchema = z.object({
+  id: z.string(),
+  name: z.string().min(1, "角色名稱不可為空"),
+  description: z.string().min(1, "請描述角色外觀"),
+});
+
+export type Character = z.infer<typeof characterSchema>;
+
 export const projectSchema = z.object({
   id: z.string(),
   name: z.string().min(1, "專案名稱不可為空"),
   description: z.string().optional().default(""),
+  characters: z.array(characterSchema).optional().default([]),
   createdAt: z.string(),
   updatedAt: z.string(),
 });

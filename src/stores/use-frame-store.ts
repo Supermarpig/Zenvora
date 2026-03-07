@@ -17,6 +17,7 @@ interface FrameState {
   deleteFrame: (id: string) => void;
   deleteFramesByProject: (projectId: string) => void;
   reorderFrames: (projectId: string, orderedIds: string[]) => void;
+  splitFrame: (frameId: string, dialogueSegments: string[]) => number;
 }
 
 export const useFrameStore = create<FrameState>()(
@@ -90,11 +91,14 @@ export const useFrameStore = create<FrameState>()(
       },
 
       importFrames: (newFrames) => {
-        set((state) => {
-          const existingIds = new Set(state.frames.map((f) => f.id));
-          const toAdd = newFrames.filter((f) => !existingIds.has(f.id));
-          return { frames: [...state.frames, ...toAdd] };
-        });
+        if (newFrames.length === 0) return;
+        const projectId = newFrames[0].projectId;
+        set((state) => ({
+          frames: [
+            ...state.frames.filter((f) => f.projectId !== projectId),
+            ...newFrames,
+          ],
+        }));
       },
 
       updateFrame: (id, data) => {
@@ -140,6 +144,42 @@ export const useFrameStore = create<FrameState>()(
             return newOrder !== -1 ? { ...f, order: newOrder } : f;
           }),
         }));
+      },
+
+      splitFrame: (frameId, dialogueSegments) => {
+        const original = get().getFrame(frameId);
+        if (!original || dialogueSegments.length < 2) return 0;
+
+        const newFrames: Frame[] = dialogueSegments.map((seg, i) => ({
+          id: crypto.randomUUID(),
+          projectId: original.projectId,
+          order: original.order + i,
+          prompt: original.prompt,
+          dialogue: seg,
+          speaker: original.speaker,
+          cameraMovement: original.cameraMovement,
+          duration: 8,
+          style: original.style,
+          mood: original.mood,
+        }));
+
+        const shiftAmount = newFrames.length - 1;
+
+        set((state) => ({
+          frames: [
+            ...state.frames
+              .filter((f) => f.id !== frameId)
+              .map((f) => {
+                if (f.projectId === original.projectId && f.order > original.order) {
+                  return { ...f, order: f.order + shiftAmount };
+                }
+                return f;
+              }),
+            ...newFrames,
+          ],
+        }));
+
+        return newFrames.length;
       },
     }),
     {

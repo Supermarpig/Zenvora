@@ -1,39 +1,71 @@
-import type { Frame } from "./schemas";
+import type { Frame, Character } from "./schemas";
 
 type GridSize = 9 | 25;
 
-export function buildGridPrompt(frames: Frame[], gridSize: GridSize = 9): string {
-  const cols = gridSize === 9 ? 3 : 5;
-  const rows = gridSize === 9 ? 3 : 5;
-  const total = Math.min(frames.length, gridSize);
-  const selected = frames.slice(0, total);
+function buildCharacterBlock(characters: Character[]): string[] {
+  if (characters.length === 0) {
+    return [
+      `The characters must match the appearance of the person(s) in the uploaded reference photo exactly — same face, hairstyle, body proportions, and clothing.`,
+    ];
+  }
+
+  const lines = [
+    `Character Reference (match EXACTLY with uploaded reference photos, in order):`,
+  ];
+  characters.forEach((c, i) => {
+    lines.push(`- Reference Photo ${i + 1} → "${c.name}": ${c.description}`);
+  });
+  lines.push(
+    `Maintain identical character appearance across ALL images.`
+  );
+  return lines;
+}
+
+export function buildGridPrompt(
+  frames: Frame[],
+  gridSize: GridSize = 9,
+  characters: Character[] = []
+): string {
+  const panelCount = gridSize;
+  const selected = frames.slice(0, panelCount);
+  const isSingleScene = selected.length === 1;
+  const styleTag = selected[0].style;
+  const moodTag = selected[0].mood;
+
+  if (isSingleScene) {
+    const f = selected[0];
+    const speaker = f.speaker ? `, ${f.speaker}` : "";
+    return [
+      `Using these characters, create a captivating ${panelCount}-part storyboard with ${panelCount} images showing this scene from different cinematic angles and distances.`,
+      ``,
+      `Scene: ${f.prompt}${speaker}`,
+      `Style: ${styleTag}, ${moodTag} atmosphere.`,
+      ``,
+      `The sequence should feel like keyframes from a continuous shot — with varied framing including wide shots, close-ups, low angles, high angles, and over-the-shoulder views.`,
+      `Do not include any text or words in the images. Tell the story purely through visuals.`,
+      ``,
+      ...buildCharacterBlock(characters),
+    ].join("\n");
+  }
 
   const panelLines = selected.map((f, i) => {
-    const num = i + 1;
     const speaker = f.speaker ? ` (${f.speaker})` : "";
-    return `Panel ${num}: ${f.prompt}${speaker}, ${f.cameraMovement.toLowerCase()}, ${f.style}, ${f.mood}`;
+    return `Part ${i + 1}: ${f.prompt}${speaker}`;
   });
 
   return [
-    `Generate EXACTLY ONE image: a ${cols}x${rows} grid of ${total} cinematic storyboard panels.`,
-    `Keep the original scene style consistent across all panels. Shoot a set of ${total}-panel storyboard photography images. Each panel must be unique with narrative flow and visual continuity.`,
-    `Each panel ratio: 16:9. Panels are tightly adjacent with NO borders, NO gaps, NO white space between them. 4K high-definition quality.`,
-    `Do NOT add any text, subtitles, numbers, labels, captions, or speech bubbles anywhere in the image. Pure visual only.`,
-    ``,
-    `Character Reference: The characters must match the appearance of the person(s) in the uploaded reference photo exactly — same face, hairstyle, body proportions, and clothing. Maintain identical character appearance across all ${total} panels.`,
+    `Using these characters, create a captivating ${panelCount}-part cinematic storyboard with ${panelCount} images.`,
+    `Style: ${styleTag}, ${moodTag} atmosphere.`,
     ``,
     ...panelLines,
     ``,
-    `Critical rules:`,
-    `- ONE single composited image, NOT ${total} separate images.`,
-    `- Each panel must show a clearly different camera angle, distance, or composition.`,
-    `- Vary between: extreme wide, wide, medium, medium close-up, close-up, extreme close-up, low angle, high angle, over-the-shoulder, bird's eye, dutch angle.`,
-    `- No two adjacent panels should have the same framing.`,
-    `- The sequence must feel like keyframes from a continuous video — with narrative progression and emotional arc.`,
-    `- Absolutely NO text or labels of any kind in the final image.`,
+    `The story should be thrilling with emotional highs and lows, varied camera angles, and visual continuity.`,
+    `Do not include any text or words in the images. Tell the story purely through visuals.`,
+    ``,
+    ...buildCharacterBlock(characters),
   ].join("\n");
 }
 
-export function buildFrameGridPrompt(frame: Frame): string {
-  return buildGridPrompt([frame], 9);
+export function buildFrameGridPrompt(frame: Frame, characters: Character[] = []): string {
+  return buildGridPrompt([frame], 9, characters);
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useTransition } from "react";
-import { Grid3X3, LayoutGrid, Sparkles, Loader2, ImageIcon, Upload, Download, Trash2 } from "lucide-react";
+import { Grid3X3, LayoutGrid, Sparkles, Loader2, ImageIcon, Upload, Download, Trash2, Scissors } from "lucide-react";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CopyButton } from "./copy-button";
-import { buildSeedancePrompt } from "@/lib/seedance-prompt";
+import { buildVeoPrompt } from "@/lib/veo-prompt";
 import { buildGridPrompt } from "@/lib/storyboard-prompt";
 import { useFrameStore } from "@/stores/use-frame-store";
 import { useProjectStore } from "@/stores/use-project-store";
@@ -23,11 +23,13 @@ import { useGenerateImage } from "@/hooks/use-generate-image";
 import { useImageStorage } from "@/hooks/use-image-storage";
 import { durationOptions, cameraOptions } from "@/lib/seedance-options";
 import { generateNextFrame } from "@/actions/generate-next-frame";
+import { splitDialogue, MAX_CHARS_PER_SEGMENT, countSpeakingChars } from "@/lib/split-dialogue";
 import type { Frame } from "@/lib/schemas";
 
 export function PromptRow({ frame }: { frame: Frame }) {
   const updateFrame = useFrameStore((s) => s.updateFrame);
   const insertFrameAfter = useFrameStore((s) => s.insertFrameAfter);
+  const splitFrame = useFrameStore((s) => s.splitFrame);
   const project = useProjectStore((s) => s.getProject(frame.projectId));
 
   const { imageData, save, remove } = useImageStorage(frame.id);
@@ -80,8 +82,9 @@ export function PromptRow({ frame }: { frame: Frame }) {
     updateFrame(frame.id, { cameraMovement: value as Frame["cameraMovement"] });
   }
 
+  const characters = project?.characters ?? [];
   const liveFrame: Frame = { ...frame, prompt, speaker, dialogue };
-  const seedancePrompt = buildSeedancePrompt(liveFrame);
+  const veoPrompt = buildVeoPrompt(liveFrame);
 
   async function handleGenerate() {
     if (!prompt) {
@@ -161,8 +164,21 @@ export function PromptRow({ frame }: { frame: Frame }) {
     });
   }
 
+  const speakingChars = countSpeakingChars(dialogue);
+  const canSplit = speakingChars > MAX_CHARS_PER_SEGMENT;
+
+  function handleSplitDialogue() {
+    const segments = splitDialogue(dialogue);
+    if (segments.length < 2) {
+      toast.error("台詞長度不需要拆分");
+      return;
+    }
+    const count = splitFrame(frame.id, segments);
+    toast.success(`已將 #${frame.order + 1} 拆成 ${count} 段`);
+  }
+
   async function handleCopyGrid(size: 9 | 25) {
-    const gridPrompt = buildGridPrompt([liveFrame], size);
+    const gridPrompt = buildGridPrompt([liveFrame], size, characters);
     await navigator.clipboard.writeText(gridPrompt);
     toast.success(`已複製 #${frame.order + 1} 的 ${size} 宮格 Prompt`);
   }
@@ -288,13 +304,13 @@ export function PromptRow({ frame }: { frame: Frame }) {
 
           <hr className="border-dashed" />
 
-          {/* Seedance → 台詞 + 提示詞 */}
+          {/* Veo 3 → 台詞 + 提示詞 */}
           <div>
             <div className="mb-1.5 flex items-center gap-1.5">
-              <span className="rounded bg-green-100 px-1.5 py-0.5 text-[10px] font-semibold text-green-700 dark:bg-green-900 dark:text-green-300">
-                Seedance
+              <span className="rounded bg-purple-100 px-1.5 py-0.5 text-[10px] font-semibold text-purple-700 dark:bg-purple-900 dark:text-purple-300">
+                Veo 3
               </span>
-              <CopyButton text={seedancePrompt} />
+              <CopyButton text={veoPrompt} />
             </div>
             <div className="mb-1.5 flex gap-1.5">
               <Input
@@ -311,14 +327,26 @@ export function PromptRow({ frame }: { frame: Frame }) {
               />
             </div>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              {seedancePrompt}
+              {veoPrompt}
             </p>
           </div>
         </div>
       </div>
 
-      {/* AI 生成並插入下一個分鏡 */}
-      <div className="flex justify-end border-t px-3 py-1.5">
+      <div className="flex items-center justify-between border-t px-3 py-1.5">
+        <div>
+          {canSplit && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 gap-1.5 text-[11px] text-orange-600 hover:text-orange-700"
+              onClick={handleSplitDialogue}
+            >
+              <Scissors className="h-3.5 w-3.5" />
+              拆分台詞（{splitDialogue(dialogue).length} 段）
+            </Button>
+          )}
+        </div>
         <Button
           variant="ghost"
           size="sm"
