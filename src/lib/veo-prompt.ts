@@ -1,5 +1,16 @@
 import type { Frame } from "./schemas";
 
+const SPEAKER_EN: Record<string, string> = {
+  空服員: "The flight attendant",
+  威力: "The man (Willie)",
+  Sam: "Sam",
+};
+
+function speakerLine(speaker: string, dialogue: string): string {
+  const name = SPEAKER_EN[speaker] ?? speaker;
+  return `${name} speaks in Mandarin Chinese: "${dialogue}"`;
+}
+
 const CAMERA_DIRECTIONS: Record<string, string> = {
   Fixed: "Static locked-off camera on tripod, stable and composed",
   "Pan Left":
@@ -78,9 +89,96 @@ export function buildImagePrompt(frame: Frame): string {
 }
 
 /**
- * Veo 3 prompt（影片生成）：場景 + 風格 + 光線 + 攝影機運動 + 語音
+ * Flow prompt（圖生影片）：只描述動作、運鏡、音效，不重複描述畫面外觀
+ * 搭配九宮格中的單張圖片一起貼到 Google Flow
  */
-export function buildVeoPrompt(frame: Frame): string {
+export function buildFlowPrompt(frame: Frame, mute = true): string {
+  const sections: string[] = [];
+
+  sections.push(
+    `Starting from this reference image, bring it to life with cinematic motion:`
+  );
+
+  sections.push(frame.prompt);
+
+  const cam = CAMERA_DIRECTIONS[frame.cameraMovement];
+  if (cam) {
+    sections.push(`Camera: ${cam}.`);
+  }
+
+  sections.push(
+    `Do not alter the character's face, clothing, or appearance from the reference image. Do not render any text, subtitles, or watermarks.`
+  );
+
+  if (mute) {
+    sections.push(
+      `[SFX] ambient environmental sound only. No dialogue, no narration.`
+    );
+  } else if (frame.speaker && frame.dialogue) {
+    const cleaned = frame.dialogue.replace(/^[（(].*?[）)]$/g, "").trim();
+    if (cleaned) {
+      sections.push(speakerLine(frame.speaker, cleaned));
+    }
+  } else if (frame.dialogue) {
+    const isSfx = /^[（(]/.test(frame.dialogue);
+    if (isSfx) {
+      sections.push(`[SFX] ${frame.dialogue.replace(/[（()）]/g, "")}`);
+    }
+  }
+
+  return sections.join("\n\n");
+}
+
+/**
+ * 延長 prompt（Flow 延長功能）：從當前鏡頭平滑過渡到下一鏡的動作
+ */
+export function buildExtendPrompt(
+  currentFrame: Frame,
+  nextFrame: Frame,
+  mute = true
+): string {
+  const sections: string[] = [];
+
+  sections.push(
+    `Continuing seamlessly from the previous clip, smoothly transition into the next action:`
+  );
+
+  sections.push(nextFrame.prompt);
+
+  const cam = CAMERA_DIRECTIONS[nextFrame.cameraMovement];
+  if (cam) {
+    sections.push(`Camera: ${cam}.`);
+  }
+
+  sections.push(
+    `Maintain visual continuity — same characters, same location, same lighting. Do not alter faces, clothing, or appearance. No text, subtitles, or watermarks.`
+  );
+
+  if (mute) {
+    sections.push(
+      `[SFX] ambient environmental sound only. No dialogue, no narration.`
+    );
+  } else if (nextFrame.speaker && nextFrame.dialogue) {
+    const cleaned = nextFrame.dialogue
+      .replace(/^[（(].*?[）)]$/g, "")
+      .trim();
+    if (cleaned) {
+      sections.push(speakerLine(nextFrame.speaker, cleaned));
+    }
+  }
+
+  return sections.join("\n\n");
+}
+
+interface VeoOptions {
+  mute?: boolean;
+}
+
+/**
+ * Veo 3 prompt（影片生成）：場景 + 風格 + 光線 + 攝影機運動 + 語音
+ * mute = true 時省略台詞，只保留畫面 + 環境音效
+ */
+export function buildVeoPrompt(frame: Frame, opts: VeoOptions = {}): string {
   const sections: string[] = [];
 
   sections.push(frame.prompt);
@@ -98,19 +196,21 @@ export function buildVeoPrompt(frame: Frame): string {
     `Do not render any text, subtitles, captions, labels, or watermarks in the video. Pure visual storytelling only.`
   );
 
-  if (frame.speaker && frame.dialogue) {
-    const cleaned = frame.dialogue.replace(/^[（(].*?[）)]$/g, "").trim();
-    if (cleaned) {
-      sections.push(
-        `${frame.speaker} speaks in Taiwanese Mandarin: "${cleaned}"`
-      );
-    }
-  } else if (frame.dialogue) {
-    const isSfx = /^[（(]/.test(frame.dialogue);
-    if (isSfx) {
-      sections.push(`[SFX] ${frame.dialogue.replace(/[（()）]/g, "")}`);
-    } else {
-      sections.push(`A narrator speaks in Taiwanese Mandarin: "${frame.dialogue}"`);
+  if (opts.mute) {
+    sections.push(`[SFX] ambient room tone and subtle environmental sound only. No dialogue, no narration, no voice.`);
+  } else {
+    if (frame.speaker && frame.dialogue) {
+      const cleaned = frame.dialogue.replace(/^[（(].*?[）)]$/g, "").trim();
+      if (cleaned) {
+        sections.push(speakerLine(frame.speaker, cleaned));
+      }
+    } else if (frame.dialogue) {
+      const isSfx = /^[（(]/.test(frame.dialogue);
+      if (isSfx) {
+        sections.push(`[SFX] ${frame.dialogue.replace(/[（()）]/g, "")}`);
+      } else {
+        sections.push(`A narrator speaks in Mandarin Chinese: "${frame.dialogue}"`);
+      }
     }
   }
 

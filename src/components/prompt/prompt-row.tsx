@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useTransition } from "react";
-import { Grid3X3, LayoutGrid, Sparkles, Loader2, ImageIcon, Upload, Download, Trash2, Scissors } from "lucide-react";
+import { Grid3X3, LayoutGrid, Sparkles, Loader2, ImageIcon, Upload, Download, Trash2, Scissors, VolumeX, Volume2, Clapperboard, FastForward } from "lucide-react";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CopyButton } from "./copy-button";
-import { buildVeoPrompt, buildImagePrompt } from "@/lib/veo-prompt";
+import { buildVeoPrompt, buildImagePrompt, buildFlowPrompt, buildExtendPrompt } from "@/lib/veo-prompt";
 import { buildGridPrompt } from "@/lib/storyboard-prompt";
 import { useFrameStore } from "@/stores/use-frame-store";
 import { useProjectStore } from "@/stores/use-project-store";
@@ -30,6 +30,8 @@ export function PromptRow({ frame }: { frame: Frame }) {
   const updateFrame = useFrameStore((s) => s.updateFrame);
   const insertFrameAfter = useFrameStore((s) => s.insertFrameAfter);
   const splitFrame = useFrameStore((s) => s.splitFrame);
+  const frames = useFrameStore((s) => s.frames);
+  const allFrames = frames.filter((f) => f.projectId === frame.projectId);
   const project = useProjectStore((s) => s.getProject(frame.projectId));
 
   const { imageData, save, remove } = useImageStorage(frame.id);
@@ -82,10 +84,18 @@ export function PromptRow({ frame }: { frame: Frame }) {
     updateFrame(frame.id, { cameraMovement: value as Frame["cameraMovement"] });
   }
 
+  const [mute, setMute] = useState(false);
+  const [useFlow, setUseFlow] = useState(true);
+
   const characters = project?.characters ?? [];
   const liveFrame: Frame = { ...frame, prompt, speaker, dialogue };
   const imagePrompt = buildImagePrompt(liveFrame);
-  const veoPrompt = buildVeoPrompt(liveFrame);
+  const veoPrompt = useFlow
+    ? buildFlowPrompt(liveFrame, mute)
+    : buildVeoPrompt(liveFrame, { mute });
+
+  const sorted = [...allFrames].sort((a, b) => a.order - b.order);
+  const nextFrame = sorted.find((f) => f.order > frame.order);
 
   async function handleGenerate() {
     if (!prompt) {
@@ -315,6 +325,45 @@ export function PromptRow({ frame }: { frame: Frame }) {
                 Veo 3
               </span>
               <CopyButton text={veoPrompt} />
+              <Button
+                variant={useFlow ? "secondary" : "ghost"}
+                size="sm"
+                className="h-6 gap-1 px-2 text-[10px]"
+                onClick={() => setUseFlow(!useFlow)}
+              >
+                {useFlow ? (
+                  <><Clapperboard className="h-3 w-3" /> 圖生影片</>
+                ) : (
+                  <><Clapperboard className="h-3 w-3" /> 文生影片</>
+                )}
+              </Button>
+              <Button
+                variant={mute ? "secondary" : "ghost"}
+                size="sm"
+                className="h-6 gap-1 px-2 text-[10px]"
+                onClick={() => setMute(!mute)}
+              >
+                {mute ? (
+                  <><VolumeX className="h-3 w-3" /> 靜音</>
+                ) : (
+                  <><Volume2 className="h-3 w-3" /> AI 語音</>
+                )}
+              </Button>
+              {nextFrame && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 gap-1 px-2 text-[10px] text-amber-600 hover:text-amber-700"
+                  onClick={async () => {
+                    const extPrompt = buildExtendPrompt(liveFrame, nextFrame, mute);
+                    await navigator.clipboard.writeText(extPrompt);
+                    toast.success(`已複製延長 Prompt → 銜接至 #${nextFrame.order + 1}`);
+                  }}
+                >
+                  <FastForward className="h-3 w-3" />
+                  延長→#{nextFrame.order + 1}
+                </Button>
+              )}
             </div>
             <div className="mb-1.5 flex gap-1.5">
               <Input
