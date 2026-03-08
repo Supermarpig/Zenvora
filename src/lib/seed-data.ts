@@ -47,7 +47,7 @@ export const seedFrames: Frame[] = [
     projectId: PROJECT_ID,
     order: 2,
     prompt:
-      "Airplane cabin seating area, a passenger staring at laptop screen showing KPI charts in despair, a supervisor gliding in on seat, a flight attendant elegantly closing the laptop lid with a sly smile, medium shot",
+      "Airplane cabin seating area, an employee sitting at a desk staring at a laptop screen displaying KPI charts with a devastated expression, a supervisor on another office chair using his foot to glide sideways into the frame and stopping right next to the employee, awkward comedic tension, medium wide shot",
     speaker: "空服員",
     dialogue: "若您發現隔壁乘客是您不認識的主管，請保持尷尬而不失禮貌的微笑，",
     cameraMovement: "Pan Right",
@@ -60,7 +60,7 @@ export const seedFrames: Frame[] = [
     projectId: PROJECT_ID,
     order: 3,
     prompt:
-      "Airplane cabin, flight attendant wagging finger at camera with a knowing smile after closing laptop, comedic corporate humor, close-up",
+      "Airplane cabin seating area, a flight attendant walking up to the employee from behind, swiftly and elegantly closing the laptop lid shut with one hand, then turning toward the camera wagging her finger side to side with a sly knowing smile, comedic corporate humor, medium close-up",
     speaker: "空服員",
     dialogue: "並假裝昨天的 KPI 只是場夢。",
     cameraMovement: "Zoom In",

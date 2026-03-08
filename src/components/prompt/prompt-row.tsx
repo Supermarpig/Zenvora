@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CopyButton } from "./copy-button";
-import { buildVeoPrompt } from "@/lib/veo-prompt";
+import { buildVeoPrompt, buildImagePrompt } from "@/lib/veo-prompt";
 import { buildGridPrompt } from "@/lib/storyboard-prompt";
 import { useFrameStore } from "@/stores/use-frame-store";
 import { useProjectStore } from "@/stores/use-project-store";
@@ -84,6 +84,7 @@ export function PromptRow({ frame }: { frame: Frame }) {
 
   const characters = project?.characters ?? [];
   const liveFrame: Frame = { ...frame, prompt, speaker, dialogue };
+  const imagePrompt = buildImagePrompt(liveFrame);
   const veoPrompt = buildVeoPrompt(liveFrame);
 
   async function handleGenerate() {
@@ -93,7 +94,7 @@ export function PromptRow({ frame }: { frame: Frame }) {
     }
     try {
       const result = await generateMutation.mutateAsync({
-        prompt,
+        prompt: imagePrompt,
         model: "gemini-2.5-flash-image",
         imageSize: "16:9",
       });
@@ -283,7 +284,7 @@ export function PromptRow({ frame }: { frame: Frame }) {
               <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700 dark:bg-blue-900 dark:text-blue-300">
                 生圖
               </span>
-              <CopyButton text={prompt} />
+              <CopyButton text={imagePrompt} />
               <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px]" onClick={() => handleCopyGrid(9)}>
                 <Grid3X3 className="mr-1 h-3 w-3" />
                 9格
@@ -300,6 +301,9 @@ export function PromptRow({ frame }: { frame: Frame }) {
               rows={2}
               className="resize-none text-xs leading-relaxed"
             />
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              {imagePrompt}
+            </p>
           </div>
 
           <hr className="border-dashed" />

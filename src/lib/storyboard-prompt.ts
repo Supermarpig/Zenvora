@@ -2,6 +2,39 @@ import type { Frame, Character } from "./schemas";
 
 type GridSize = 9 | 25;
 
+const MOOD_STYLE: Record<string, string> = {
+  "Warm/Golden Hour":
+    "warm golden hour lighting with soft amber rim light and volumetric rays",
+  "Moody/Dramatic":
+    "dramatic high-contrast lighting with deep shadows and teal-orange color grading",
+  "Bright/Cheerful":
+    "bright cheerful lighting with vibrant saturated colors and soft fill light",
+  "Cold/Blue Tone":
+    "cool blue-toned lighting with desaturated clinical palette",
+  "Neon/Glow":
+    "vivid neon glow with magenta and cyan accents, cyberpunk night aesthetic",
+  "Soft/Dreamy":
+    "soft diffused dreamy lighting with pastel tones and heavy bokeh",
+  "Dark/Horror":
+    "dark horror atmosphere with harsh underlight and desaturated cold palette",
+  "Vintage/Retro":
+    "vintage warm faded tones with 35mm film grain and nostalgic soft-focus",
+};
+
+const LENS_STYLE: Record<string, string> = {
+  Photorealistic: "photorealistic, shot on cinema camera with natural lighting",
+  Cinematic:
+    "cinematic film quality, shot on 35mm anamorphic lens with shallow depth of field and oval bokeh",
+  Anime: "anime-style cel-shaded illustration",
+  Cyberpunk: "cyberpunk Blade Runner aesthetic with neon reflections",
+  Watercolor: "watercolor painting style with soft translucent washes",
+  "Film Noir":
+    "film noir black-and-white with high contrast and venetian blind shadows",
+  Illustration: "polished digital illustration with clean stylized lines",
+  "3D Render":
+    "photorealistic 3D render with ray-traced lighting, Unreal Engine 5 quality",
+};
+
 function buildCharacterBlock(characters: Character[]): string[] {
   if (characters.length === 0) {
     return [
@@ -15,9 +48,7 @@ function buildCharacterBlock(characters: Character[]): string[] {
   characters.forEach((c, i) => {
     lines.push(`- Reference Photo ${i + 1} → "${c.name}": ${c.description}`);
   });
-  lines.push(
-    `Maintain identical character appearance across ALL images.`
-  );
+  lines.push(`Maintain identical character appearance across ALL images.`);
   return lines;
 }
 
@@ -32,17 +63,28 @@ export function buildGridPrompt(
   const styleTag = selected[0].style;
   const moodTag = selected[0].mood;
 
+  const lens = LENS_STYLE[styleTag] ?? styleTag;
+  const mood = MOOD_STYLE[moodTag] ?? moodTag;
+
   if (isSingleScene) {
     const f = selected[0];
     const speaker = f.speaker ? `, ${f.speaker}` : "";
+
     return [
-      `Using these characters, create a captivating ${panelCount}-part storyboard with ${panelCount} images showing this scene from different cinematic angles and distances.`,
+      `Using these characters, create a captivating ${panelCount}-part cinematic storyboard with ${panelCount} images showing this scene from dramatically different filmmaking perspectives.`,
       ``,
       `Scene: ${f.prompt}${speaker}`,
-      `Style: ${styleTag}, ${moodTag} atmosphere.`,
       ``,
-      `The sequence should feel like keyframes from a continuous shot — with varied framing including wide shots, close-ups, low angles, high angles, and over-the-shoulder views.`,
-      `Do not include any text or words in the images. Tell the story purely through visuals.`,
+      `Visual direction:`,
+      `- Style: ${lens}, ${mood}.`,
+      `- Each panel MUST use a distinctly different combination of:`,
+      `  • Shot size: vary between extreme wide, wide, medium, medium close-up, close-up, extreme close-up`,
+      `  • Camera angle: vary between eye level, low angle, high angle, bird's eye, Dutch angle, over-the-shoulder, POV`,
+      `  • Composition: use different techniques — rule of thirds, center frame, symmetry, leading lines, frame-within-frame, foreground depth layering`,
+      `- Lighting should subtly shift between panels — vary rim light intensity, shadow direction, and highlight placement to create visual rhythm.`,
+      `- The sequence should feel like hand-picked keyframes from a professional film — with narrative flow, emotional progression, and cinematic tension.`,
+      ``,
+      `Do not include any text, words, subtitles, numbers, or labels. Tell the story purely through visuals.`,
       ``,
       ...buildCharacterBlock(characters),
     ].join("\n");
@@ -55,17 +97,23 @@ export function buildGridPrompt(
 
   return [
     `Using these characters, create a captivating ${panelCount}-part cinematic storyboard with ${panelCount} images.`,
-    `Style: ${styleTag}, ${moodTag} atmosphere.`,
+    ``,
+    `Visual direction:`,
+    `- Style: ${lens}, ${mood}.`,
+    `- Vary shot sizes (wide → close-up), camera angles (low/high/Dutch), and compositions (symmetry, leading lines, depth layering) across panels.`,
+    `- The story should feel like keyframes from a professional film — with emotional highs and lows, dramatic lighting shifts, and visual continuity.`,
     ``,
     ...panelLines,
     ``,
-    `The story should be thrilling with emotional highs and lows, varied camera angles, and visual continuity.`,
-    `Do not include any text or words in the images. Tell the story purely through visuals.`,
+    `Do not include any text, words, subtitles, numbers, or labels. Tell the story purely through visuals.`,
     ``,
     ...buildCharacterBlock(characters),
   ].join("\n");
 }
 
-export function buildFrameGridPrompt(frame: Frame, characters: Character[] = []): string {
+export function buildFrameGridPrompt(
+  frame: Frame,
+  characters: Character[] = []
+): string {
   return buildGridPrompt([frame], 9, characters);
 }
