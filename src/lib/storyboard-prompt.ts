@@ -71,7 +71,7 @@ export function buildGridPrompt(
     const speaker = f.speaker ? `, ${f.speaker}` : "";
 
     return [
-      `Using these characters, create a captivating ${panelCount}-part cinematic storyboard with ${panelCount} images showing this scene from dramatically different filmmaking perspectives.`,
+      `Using these characters, create a captivating ${panelCount}-part cinematic storyboard showing this scene from dramatically different filmmaking perspectives. Output format: a single composite image arranged as a strict 3×3 grid (3 rows, 3 columns), with ${panelCount} equal-sized panels and no borders, gaps, or labels between panels.`,
       ``,
       `Scene: ${f.prompt}${speaker}`,
       ``,
@@ -96,7 +96,7 @@ export function buildGridPrompt(
   });
 
   return [
-    `Using these characters, create a captivating ${panelCount}-part cinematic storyboard with ${panelCount} images.`,
+    `Using these characters, create a captivating ${panelCount}-part cinematic storyboard. Output format: a single composite image arranged as a strict 3×3 grid (3 rows, 3 columns), with ${panelCount} equal-sized panels and no borders, gaps, or labels between panels.`,
     ``,
     `Visual direction:`,
     `- Style: ${lens}, ${mood}.`,

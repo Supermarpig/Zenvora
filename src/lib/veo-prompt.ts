@@ -193,6 +193,10 @@ export function buildVeoPrompt(frame: Frame, opts: VeoOptions = {}): string {
   }
 
   sections.push(
+    `The characters must match the appearance of the person(s) in the uploaded reference photo exactly — same face, hairstyle, body proportions, and clothing.`
+  );
+
+  sections.push(
     `Do not render any text, subtitles, captions, labels, or watermarks in the video. Pure visual storytelling only.`
   );
 
