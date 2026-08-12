@@ -225,7 +225,8 @@ export function VideoPanel({ frameId }: VideoPanelProps) {
       </div>
 
       <p className="text-[11px] leading-relaxed text-muted-foreground">
-        由 Veo 生成,需你的 Google 金鑰已開通 Veo 影片權限。任務在雲端執行,關閉面板不影響。
+        任務在雲端執行,關閉面板不影響。各引擎需在 .env 設好對應金鑰(Veo→Google
+        AI、Seedance→火山 JIMENG_AK/SK)。
       </p>
     </div>
   );

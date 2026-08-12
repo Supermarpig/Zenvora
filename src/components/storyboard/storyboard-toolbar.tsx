@@ -5,6 +5,8 @@ import { Plus, ArrowLeft, List, RotateCcw, UsersRound } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { CharacterManager } from "./character-manager";
+import { StoryboardGenerator } from "./storyboard-generator";
+import { BatchImageButton } from "./batch-image-button";
 import { useProjectStore } from "@/stores/use-project-store";
 import { useFrameStore } from "@/stores/use-frame-store";
 import { seedProject, seedFrames } from "@/lib/seed-data";
@@ -57,6 +59,8 @@ export function StoryboardToolbar({
             重置腳本
           </Button>
         )}
+        <StoryboardGenerator projectId={projectId} />
+        <BatchImageButton projectId={projectId} />
         <Button variant="outline" size="sm" onClick={onAddFrame}>
           <Plus className="mr-1.5 h-4 w-4" />
           新增分鏡

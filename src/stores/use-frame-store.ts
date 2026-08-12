@@ -11,6 +11,7 @@ interface FrameState {
   setSelectedFrameId: (id: string | null) => void;
 
   addFrame: (projectId: string, input?: Partial<CreateFrameInput>) => Frame;
+  appendFrames: (projectId: string, inputs: Partial<CreateFrameInput>[]) => Frame[];
   insertFrameAfter: (afterFrameId: string, input?: Partial<CreateFrameInput>) => Frame;
   importFrames: (frames: Frame[]) => void;
   updateFrame: (id: string, data: Partial<Frame>) => void;
@@ -56,6 +57,24 @@ export const useFrameStore = create<FrameState>()(
         };
         set((state) => ({ frames: [...state.frames, frame] }));
         return frame;
+      },
+
+      appendFrames: (projectId, inputs) => {
+        const start = get().getFramesByProject(projectId).length;
+        const newFrames: Frame[] = inputs.map((input, i) => ({
+          id: crypto.randomUUID(),
+          projectId,
+          order: start + i,
+          prompt: input.prompt ?? "",
+          dialogue: input.dialogue ?? "",
+          speaker: input.speaker ?? "",
+          cameraMovement: input.cameraMovement ?? "Fixed",
+          duration: input.duration ?? 8,
+          style: input.style ?? "Cinematic",
+          mood: input.mood ?? "Moody/Dramatic",
+        }));
+        set((state) => ({ frames: [...state.frames, ...newFrames] }));
+        return newFrames;
       },
 
       insertFrameAfter: (afterFrameId, input) => {

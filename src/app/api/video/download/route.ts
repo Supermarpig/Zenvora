@@ -18,23 +18,40 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "uri 格式錯誤" }, { status: 400 });
   }
 
-  if (target.protocol !== "https:" || !target.hostname.endsWith("googleapis.com")) {
+  // 允許清單:各 provider 的官方檔案 / CDN host 後綴(SSRF 防護,只放行已知來源)
+  const ALLOWED_HOST_SUFFIXES = [
+    "googleapis.com", // Veo
+    "volces.com", // 火山引擎 / Seedance
+    "volccdn.com",
+    "byteimg.com",
+    "bytedance.com",
+    "klingai.com", // Kling / 可灵
+    "kuaishou.com", // 快手 CDN
+    "kwimgs.com",
+    "yximgs.com",
+  ];
+  const allowed = ALLOWED_HOST_SUFFIXES.some((s) =>
+    target.hostname.endsWith(s)
+  );
+  if (target.protocol !== "https:" || !allowed) {
     return NextResponse.json(
       { error: "不允許的下載來源" },
       { status: 403 }
     );
   }
 
-  const key = process.env.GOOGLE_AI_API_KEY;
-  if (!key || key === "your_api_key_here") {
-    return NextResponse.json(
-      { error: "未設定 GOOGLE_AI_API_KEY" },
-      { status: 500 }
-    );
+  // 只有 Google(Veo)的檔案 URI 需要帶 API key;其他 provider 的 CDN 為公開連結
+  if (target.hostname.endsWith("googleapis.com")) {
+    const key = process.env.GOOGLE_AI_API_KEY;
+    if (!key || key === "your_api_key_here") {
+      return NextResponse.json(
+        { error: "未設定 GOOGLE_AI_API_KEY" },
+        { status: 500 }
+      );
+    }
+    if (!target.searchParams.has("key")) target.searchParams.set("key", key);
+    if (!target.searchParams.has("alt")) target.searchParams.set("alt", "media");
   }
-
-  if (!target.searchParams.has("key")) target.searchParams.set("key", key);
-  if (!target.searchParams.has("alt")) target.searchParams.set("alt", "media");
 
   const upstream = await fetch(target.toString());
   if (!upstream.ok || !upstream.body) {
