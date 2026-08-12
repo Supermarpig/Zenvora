@@ -5,19 +5,25 @@ import { saveImage, loadImage, deleteImage } from "@/lib/db";
 
 export function useImageStorage(frameId: string | undefined) {
   const [imageData, setImageData] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!frameId) {
-      setImageData(null);
-      return;
-    }
-
-    setIsLoading(true);
-    loadImage(frameId)
-      .then((data) => setImageData(data ?? null))
-      .catch(() => setImageData(null))
-      .finally(() => setIsLoading(false));
+    let alive = true;
+    const p = frameId
+      ? loadImage(frameId)
+      : Promise.resolve<string | undefined>(undefined);
+    p.then((data) => {
+      if (alive) setImageData(data ?? null);
+    })
+      .catch(() => {
+        if (alive) setImageData(null);
+      })
+      .finally(() => {
+        if (alive) setIsLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
   }, [frameId]);
 
   const save = useCallback(

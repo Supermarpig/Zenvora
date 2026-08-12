@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Plus, ArrowLeft, List, RotateCcw } from "lucide-react";
+import { Plus, ArrowLeft, List, RotateCcw, UsersRound } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { CharacterManager } from "./character-manager";
@@ -44,6 +44,12 @@ export function StoryboardToolbar({
         <h1 className="text-lg font-semibold">{projectName}</h1>
       </div>
       <div className="flex items-center gap-2">
+        <Button variant="outline" size="sm" asChild>
+          <Link href="/characters">
+            <UsersRound className="mr-1.5 h-4 w-4" />
+            人物資產
+          </Link>
+        </Button>
         <CharacterManager projectId={projectId} />
         {projectId === seedProject.id && (
           <Button variant="outline" size="sm" onClick={handleReseed}>

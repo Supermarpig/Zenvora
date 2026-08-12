@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, Users } from "lucide-react";
+import Link from "next/link";
+import { Plus, Trash2, Users, Check, Library } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +16,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useProjectStore } from "@/stores/use-project-store";
+import { useCharacterAssetStore } from "@/stores/use-character-asset-store";
+import { CHARACTER_ASSET_TYPE_LABELS, type CharacterAsset } from "@/lib/schemas";
 
 interface CharacterManagerProps {
   projectId: string;
@@ -30,6 +33,7 @@ export function CharacterManager({ projectId }: CharacterManagerProps) {
   const [description, setDescription] = useState("");
 
   const characters = project?.characters ?? [];
+  const globalAssets = useCharacterAssetStore((s) => s.assets);
 
   function handleAdd() {
     if (!name.trim() || !description.trim()) {
@@ -40,6 +44,18 @@ export function CharacterManager({ projectId }: CharacterManagerProps) {
     setName("");
     setDescription("");
     toast.success(`已新增角色「${name.trim()}」`);
+  }
+
+  function handleImportAsset(asset: CharacterAsset) {
+    if (characters.some((c) => c.name === asset.name)) {
+      toast.info(`「${asset.name}」已在本專案`);
+      return;
+    }
+    addCharacter(projectId, {
+      name: asset.name,
+      description: asset.appearance,
+    });
+    toast.success(`已從資產庫加入「${asset.name}」`);
   }
 
   return (
@@ -59,11 +75,61 @@ export function CharacterManager({ projectId }: CharacterManagerProps) {
         <DialogHeader>
           <DialogTitle>角色設定</DialogTitle>
           <p className="text-sm text-muted-foreground">
-            定義角色的名稱與外觀描述，複製提示詞時會自動帶入，讓 AI 依照參考照生成正確人物。
+            本專案的角色，用於九宮格 / 提示詞複製。可從「人物資產庫」一鍵帶入常用角色。
           </p>
         </DialogHeader>
 
         <div className="space-y-4">
+          <div className="space-y-2 rounded-lg border bg-muted/40 p-3">
+            <div className="flex items-center justify-between">
+              <Label className="flex items-center gap-1.5 text-xs font-medium">
+                <Library className="h-3.5 w-3.5" />
+                從人物資產庫加入
+              </Label>
+              <Link
+                href="/characters"
+                className="text-[11px] text-primary hover:underline"
+              >
+                管理資產庫 →
+              </Link>
+            </div>
+            {globalAssets.length === 0 ? (
+              <p className="text-[11px] text-muted-foreground">
+                資產庫還沒有角色。到「人物資產」建立可跨專案重用的角色。
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {globalAssets.map((a) => {
+                  const added = characters.some((c) => c.name === a.name);
+                  return (
+                    <button
+                      key={a.id}
+                      type="button"
+                      onClick={() => handleImportAsset(a)}
+                      disabled={added}
+                      title={CHARACTER_ASSET_TYPE_LABELS[a.type] ?? a.type}
+                      className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs transition-colors ${
+                        added
+                          ? "cursor-default border-primary/40 bg-primary/10 text-muted-foreground"
+                          : "border-border hover:bg-background"
+                      }`}
+                    >
+                      {added ? (
+                        <Check className="h-3 w-3" />
+                      ) : (
+                        <Plus className="h-3 w-3" />
+                      )}
+                      {a.name}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            <p className="text-[11px] text-muted-foreground">
+              個別分鏡的 AI 生圖選角，請在分鏡編輯器的「出場人物」勾選(會自動帶參考圖)。
+            </p>
+          </div>
+
           {characters.map((c, i) => (
             <div key={c.id} className="rounded-lg border p-3 space-y-2">
               <div className="flex items-center justify-between">

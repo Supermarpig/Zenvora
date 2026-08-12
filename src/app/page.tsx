@@ -1,6 +1,8 @@
 "use client";
 
-import { Clapperboard } from "lucide-react";
+import Link from "next/link";
+import { Clapperboard, UsersRound } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useProjectStore } from "@/stores/use-project-store";
 import { ProjectCard } from "@/components/project/project-card";
 import { CreateProjectDialog } from "@/components/project/create-project-dialog";
@@ -16,7 +18,15 @@ export default function HomePage() {
             <Clapperboard className="h-6 w-6" />
             <h1 className="text-xl font-bold">FrameForge</h1>
           </div>
-          <CreateProjectDialog />
+          <div className="flex items-center gap-2">
+            <Button variant="outline" asChild>
+              <Link href="/characters">
+                <UsersRound className="mr-1.5 h-4 w-4" />
+                人物資產
+              </Link>
+            </Button>
+            <CreateProjectDialog />
+          </div>
         </div>
       </header>
 

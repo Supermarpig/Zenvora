@@ -34,6 +34,8 @@ import { updateFrameSchema, type Frame } from "@/lib/schemas";
 import { cameraOptions, styleOptions, moodOptions } from "@/lib/seedance-options";
 import { buildVeoPrompt } from "@/lib/veo-prompt";
 import { ImageGenerator } from "./image-generator";
+import { VideoPanel } from "./video-panel";
+import { CastPicker } from "@/components/character/cast-picker";
 
 export function FrameEditor() {
   const selectedFrameId = useFrameStore((s) => s.selectedFrameId);
@@ -131,6 +133,10 @@ export function FrameEditor() {
 
             <div className="mt-6 space-y-6">
               <ImageGenerator frameId={frame.id} />
+
+              <CastPicker frameId={frame.id} />
+
+              <VideoPanel frameId={frame.id} />
 
               <Form {...form}>
                 <form

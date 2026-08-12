@@ -13,7 +13,18 @@ const generateImageInputSchema = z.object({
   imageSize: z
     .enum(["1:1", "3:2", "2:3", "3:4", "4:3", "9:16", "16:9"])
     .default("16:9"),
+  /** 參考圖(data URL),用於角色一致性生成 */
+  referenceImages: z.array(z.string()).optional(),
 });
+
+/** 把 data URL 拆成 Gemini inlineData 需要的 mimeType + base64 */
+function toInlineData(
+  dataUrl: string
+): { mimeType: string; data: string } | null {
+  const match = /^data:([^;]+);base64,([\s\S]+)$/.exec(dataUrl);
+  if (!match) return null;
+  return { mimeType: match[1], data: match[2] };
+}
 
 export type GenerateImageInput = z.infer<typeof generateImageInputSchema>;
 
@@ -39,8 +50,18 @@ export async function generateImage(
     return { success: false, error: "請先設定 GOOGLE_AI_API_KEY 環境變數" };
   }
 
-  const { prompt, model, imageSize } = parsed.data;
+  const { prompt, model, imageSize, referenceImages } = parsed.data;
   const fullPrompt = `Generate an image in ${imageSize} aspect ratio: ${prompt}`;
+
+  // requestParts:先放參考圖(inlineData),再放文字指示
+  const requestParts: Array<
+    { text: string } | { inlineData: { mimeType: string; data: string } }
+  > = [];
+  for (const dataUrl of referenceImages ?? []) {
+    const inline = toInlineData(dataUrl);
+    if (inline) requestParts.push({ inlineData: inline });
+  }
+  requestParts.push({ text: fullPrompt });
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
@@ -49,11 +70,7 @@ export async function generateImage(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [
-          {
-            parts: [{ text: fullPrompt }],
-          },
-        ],
+        contents: [{ parts: requestParts }],
         generationConfig: {
           responseModalities: ["IMAGE", "TEXT"],
         },

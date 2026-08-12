@@ -2,7 +2,7 @@
 
 import { memo, useEffect, useState } from "react";
 import { Handle, Position, type NodeProps, type Node } from "@xyflow/react";
-import { ImageIcon } from "lucide-react";
+import { ImageIcon, Clapperboard, Loader2 } from "lucide-react";
 import { loadImage } from "@/lib/db";
 
 export type FrameNodeData = {
@@ -11,6 +11,8 @@ export type FrameNodeData = {
   prompt: string;
   imageBase64Key?: string;
   isSelected: boolean;
+  hasVideo?: boolean;
+  videoStatus?: "none" | "queued" | "running" | "succeeded" | "failed";
 };
 
 type FrameNodeType = Node<FrameNodeData, "frame">;
@@ -19,11 +21,16 @@ function FrameNodeComponent({ data }: NodeProps<FrameNodeType>) {
   const [thumbnail, setThumbnail] = useState<string | null>(null);
 
   useEffect(() => {
-    if (data.imageBase64Key) {
-      loadImage(data.frameId).then((img) => setThumbnail(img ?? null));
-    } else {
-      setThumbnail(null);
-    }
+    let alive = true;
+    const p = data.imageBase64Key
+      ? loadImage(data.frameId)
+      : Promise.resolve<string | undefined>(undefined);
+    p.then((img) => {
+      if (alive) setThumbnail(img ?? null);
+    });
+    return () => {
+      alive = false;
+    };
   }, [data.imageBase64Key, data.frameId]);
 
   return (
@@ -35,7 +42,7 @@ function FrameNodeComponent({ data }: NodeProps<FrameNodeType>) {
           ${data.isSelected ? "border-primary ring-2 ring-primary/20" : "border-border hover:border-primary/50"}
         `}
       >
-        <div className="aspect-video w-full overflow-hidden rounded-t-md bg-muted">
+        <div className="relative aspect-video w-full overflow-hidden rounded-t-md bg-muted">
           {thumbnail ? (
             <img
               src={thumbnail}
@@ -47,6 +54,17 @@ function FrameNodeComponent({ data }: NodeProps<FrameNodeType>) {
               <ImageIcon className="h-8 w-8 text-muted-foreground/40" />
             </div>
           )}
+          {data.videoStatus === "running" ? (
+            <span className="absolute right-1 top-1 flex items-center gap-0.5 rounded-full bg-black/70 px-1.5 py-0.5 text-[9px] font-medium text-white">
+              <Loader2 className="h-2.5 w-2.5 animate-spin" />
+              生成中
+            </span>
+          ) : data.hasVideo ? (
+            <span className="absolute right-1 top-1 flex items-center gap-0.5 rounded-full bg-emerald-600/90 px-1.5 py-0.5 text-[9px] font-medium text-white">
+              <Clapperboard className="h-2.5 w-2.5" />
+              影片
+            </span>
+          ) : null}
         </div>
         <div className="p-2">
           <div className="flex items-center gap-1.5">

@@ -40,6 +40,8 @@ function framesToNodes(
       prompt: frame.prompt,
       imageBase64Key: frame.imageBase64Key,
       isSelected: frame.id === selectedFrameId,
+      hasVideo: !!frame.videoKey,
+      videoStatus: frame.videoStatus,
     },
   }));
 }

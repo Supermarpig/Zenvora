@@ -8,11 +8,65 @@ export const characterSchema = z.object({
 
 export type Character = z.infer<typeof characterSchema>;
 
+// --- 人物資產(全域、跨專案可重用)---
+
+export const CHARACTER_ASSET_TYPES = ["actor", "presenter", "reface"] as const;
+
+export const CHARACTER_ASSET_TYPE_LABELS: Record<string, string> = {
+  actor: "漫劇角色",
+  presenter: "數字人主播",
+  reface: "換臉目標",
+};
+
+export const characterAssetSchema = z.object({
+  id: z.string(),
+  name: z.string().min(1, "角色名稱不可為空"),
+  type: z.enum(CHARACTER_ASSET_TYPES).default("actor"),
+  appearance: z.string().min(1, "請描述角色外觀"),
+  /** 多角度參考圖，存於 IndexedDB，key 形如 asset-{id}-{n} */
+  referenceImageKeys: z.array(z.string()).default([]),
+  voice: z
+    .object({
+      provider: z.string().optional(),
+      voiceId: z.string().optional(),
+      sampleKey: z.string().optional(),
+    })
+    .optional(),
+  tags: z.array(z.string()).default([]),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export type CharacterAsset = z.infer<typeof characterAssetSchema>;
+export type CharacterAssetType = (typeof CHARACTER_ASSET_TYPES)[number];
+
+export const createCharacterAssetSchema = z.object({
+  name: z.string().min(1, "角色名稱不可為空"),
+  type: z.enum(CHARACTER_ASSET_TYPES).default("actor"),
+  appearance: z.string().min(1, "請描述角色外觀"),
+});
+
+export type CreateCharacterAssetInput = z.infer<
+  typeof createCharacterAssetSchema
+>;
+
+export const PROJECT_TYPES = ["comic", "commerce", "reface"] as const;
+
+export const PROJECT_TYPE_LABELS: Record<string, string> = {
+  comic: "AI 漫劇",
+  commerce: "帶貨影片",
+  reface: "影片換人物",
+};
+
 export const projectSchema = z.object({
   id: z.string(),
   name: z.string().min(1, "專案名稱不可為空"),
   description: z.string().optional().default(""),
   characters: z.array(characterSchema).optional().default([]),
+  /** 專案型態，決定走哪條 pipeline */
+  projectType: z.enum(PROJECT_TYPES).optional(),
+  /** 選角:此專案引用的人物資產 id */
+  characterAssetIds: z.array(z.string()).optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
@@ -22,6 +76,7 @@ export type Project = z.infer<typeof projectSchema>;
 export const createProjectSchema = z.object({
   name: z.string().min(1, "專案名稱不可為空"),
   description: z.string().default(""),
+  projectType: z.enum(PROJECT_TYPES).optional(),
 });
 
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;
@@ -76,6 +131,18 @@ export const frameSchema = z.object({
   mood: z.enum(MOOD_OPTIONS).default("Moody/Dramatic"),
   imageBase64Key: z.string().optional(),
   creditCost: z.number().optional(),
+  // --- 選角 ---
+  /** 本格出場的人物資產 id */
+  castIds: z.array(z.string()).optional(),
+  // --- 影片生成 ---
+  /** IndexedDB 影片 key(video-{frameId}) */
+  videoKey: z.string().optional(),
+  videoModel: z.string().optional(),
+  videoStatus: z
+    .enum(["none", "queued", "running", "succeeded", "failed"])
+    .optional(),
+  videoDurationSec: z.number().optional(),
+  videoError: z.string().optional(),
 });
 
 export type Frame = z.infer<typeof frameSchema>;

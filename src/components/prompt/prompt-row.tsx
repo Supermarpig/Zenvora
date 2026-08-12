@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useTransition } from "react";
+import { useState, useRef, useTransition } from "react";
 import { Grid3X3, LayoutGrid, Sparkles, Loader2, ImageIcon, Upload, Download, Trash2, Scissors, VolumeX, Volume2, Clapperboard, FastForward } from "lucide-react";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
@@ -46,11 +46,27 @@ export function PromptRow({ frame }: { frame: Frame }) {
   const dialogueTimer = useRef<ReturnType<typeof setTimeout>>(null);
   const [isPending, startTransition] = useTransition();
 
-  useEffect(() => {
+  // 外部(如 AI 續鏡/拆分)改動 frame 時,同步回本地輸入 state。
+  // 用 render 期間有 guard 的 setState(React 官方模式),取代 effect。
+  const [syncedFrom, setSyncedFrom] = useState({
+    prompt: frame.prompt,
+    speaker: frame.speaker ?? "",
+    dialogue: frame.dialogue ?? "",
+  });
+  if (
+    syncedFrom.prompt !== frame.prompt ||
+    syncedFrom.speaker !== (frame.speaker ?? "") ||
+    syncedFrom.dialogue !== (frame.dialogue ?? "")
+  ) {
+    setSyncedFrom({
+      prompt: frame.prompt,
+      speaker: frame.speaker ?? "",
+      dialogue: frame.dialogue ?? "",
+    });
     setPrompt(frame.prompt);
     setSpeaker(frame.speaker ?? "");
     setDialogue(frame.dialogue ?? "");
-  }, [frame.prompt, frame.speaker, frame.dialogue]);
+  }
 
   function handlePromptChange(value: string) {
     setPrompt(value);
