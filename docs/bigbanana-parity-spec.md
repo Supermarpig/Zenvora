@@ -1041,8 +1041,8 @@ const STYLE_LENS: Record<string, { verbose: string; compact: string }>
 
 ### N4 交付中心(大 · 弱依賴 N1)
 
-- [ ] 時間軸預覽:水平 gantt(複用 `buildTimeline`,不需 API)
-- [ ] playlist 依序播放(無影片則顯示靜態圖停留該鏡時長)
+- [x] ~~時間軸預覽:水平 gantt~~ —— 2026-08-13 完成。**刻意複用 `buildTimeline` 而不自己算一份**,預覽區間必須與導出的 timeline.json 完全一致,否則預覽看起來對、進剪映卻歪掉。bar 寬度正比於時長,三種素材狀態分色(有影片 / 只有圖 / 無素材虛線),可點選跳鏡
+- [x] ~~playlist 依序播放~~ —— 有影片交給 `<video onEnded>` 推進,其餘用該鏡時長計時。實測每鏡 4 秒時,播放 5 秒後在第 2 鏡、播完自動停止
 - [ ] AI 粗剪:建議制,逐項接受/拒絕,**不直接改資料**
 - [ ] 渲染追蹤總覽 + 只重試失敗鏡次(§7.2.4)
 - [ ] `snapshotSchema` + 劇集級備份(§7.2.5,與 N5 共用)

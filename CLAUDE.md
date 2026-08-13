@@ -79,5 +79,6 @@ dev server 用 `preview_start` 的 `frameforge-dev`(`.claude/launch.json`,port 3
 - `frameSchema` 的 `video*` 欄位是**結果**,`use-job-store` 是**任務**,兩者都 persist。`videoStatus` 與 `VideoJob.status` 有值域重疊,更新時要同步兩邊。
 - `@角色名` 引用的解析在 `src/lib/mention.ts`(純函式,可測),`cast.ts` re-export 並負責讀參考圖。只認得既有資產名稱,不用 regex 猜邊界;未知的 `@xxx` 原樣保留。角色來源是「`@` 引用 ∪ `castIds` 手動選角」,`@` 決定參考圖編號順序。
 - **Prompt 模板可被使用者覆寫**(`src/lib/prompt-template.ts`)。內建模板留在 code 裡當 fallback,store 只存改過的。`buildImagePrompt(frame, template?)` 與 `buildCharacterSheetPrompt(input, templates?)` 接可選模板參數以保持純函式,呼叫方負責從 store 取。**改內建模板的字串會讓既有專案重生的圖跟舊圖不一致**,有防回歸測試盯著。
+- **時間軸預覽與導出剪映共用 `buildTimeline`**,不要為預覽另寫一份計算 —— 兩邊算出不同區間的話,預覽看起來對但進剪映會歪。
 - 宮格排版由 `gridSpec(size, orientation)` 決定。注意「每格比例」不等於「整張比例」—— 16:9 分成 3×2,每格是 6:5。
 - 九宮格有兩種語意:`buildFrameGridPrompt` 是**單一分鏡的九種鏡位**(挑鏡用);多 frames 的 `buildGridPrompt` 是**九個不同分鏡各一格**(省成本用,對應「連續九宮格」工具)。
