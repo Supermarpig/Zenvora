@@ -112,7 +112,11 @@ export function PlanReviewDialog({ projectId }: { projectId: string }) {
     }
 
     setFillingAsset(name);
-    const result = await inferAsset({ name, contexts });
+    const result = await inferAsset({
+      name,
+      contexts,
+      textModel: useModelConfigStore.getState().textModel,
+    });
     setFillingAsset(null);
 
     if (!result.success) {
@@ -140,6 +144,7 @@ export function PlanReviewDialog({ projectId }: { projectId: string }) {
     }
     setAiLoading(true);
     const result = await reviewPlanWithAi({
+      textModel: useModelConfigStore.getState().textModel,
       shots: frames.map((f, i) => ({
         shot: i + 1,
         prompt: f.prompt,

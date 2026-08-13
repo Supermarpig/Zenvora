@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import { resolveTextModel } from "@/lib/model-config";
 
 /**
  * 小說 / 長文 → 場次大綱 + 角色清單。
@@ -15,6 +16,8 @@ import { z } from "zod";
 const MAX_CHARS = 50_000;
 
 const inputSchema = z.object({
+  /** 文字模型覆寫;留空用內建預設 */
+  textModel: z.string().optional(),
   text: z.string().min(50, "文字太短,至少要 50 個字"),
   language: z.string().default("繁體中文"),
   /** 期望拆出的場數;留空讓模型自己判斷 */
@@ -113,7 +116,8 @@ export async function splitNovel(
     .filter(Boolean)
     .join("\n");
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+  const model = resolveTextModel(parsed.data.textModel ?? "");
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   try {
     const res = await fetch(url, {

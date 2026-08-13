@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import { resolveTextModel } from "@/lib/model-config";
 
 /**
  * AI 粗剪建議。
@@ -24,6 +25,8 @@ const shotInputSchema = z.object({
 });
 
 const inputSchema = z.object({
+  /** 文字模型覆寫;留空用內建預設 */
+  textModel: z.string().optional(),
   shots: z.array(shotInputSchema).min(2, "至少要有 2 個分鏡才需要粗剪"),
   /** 目標總長(秒),留空則不以長度為目標 */
   targetDurationSec: z.number().optional(),
@@ -110,7 +113,8 @@ export async function suggestRoughCut(
     .filter(Boolean)
     .join("\n");
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+  const model = resolveTextModel(parsed.data.textModel ?? "");
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   try {
     const res = await fetch(url, {

@@ -193,6 +193,7 @@ export function PromptRow({ frame }: { frame: Frame }) {
   function handleGenerateNext() {
     startTransition(async () => {
       const result = await generateNextFrame({
+        textModel: useModelConfigStore.getState().textModel,
         currentPrompt: prompt,
         currentDialogue: dialogue,
         currentSpeaker: speaker,

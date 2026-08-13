@@ -1,10 +1,14 @@
 "use server";
 
+import { resolveTextModel } from "@/lib/model-config";
+
 interface GenerateNextInput {
   currentPrompt: string;
   currentDialogue: string;
   currentSpeaker: string;
   projectDescription: string;
+  /** 文字模型覆寫;留空用內建預設 */
+  textModel?: string;
 }
 
 export type GenerateNextResult =
@@ -32,7 +36,8 @@ export async function generateNextFrame(
     `{"prompt":"<English scene description for image generation, cinematic and detailed>","speaker":"<same speaker or new character, in original language>","dialogue":"<dialogue in the same language as the current dialogue>"}`,
   ].join("\n");
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+  const model = resolveTextModel(input.textModel ?? "");
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   try {
     const res = await fetch(url, {

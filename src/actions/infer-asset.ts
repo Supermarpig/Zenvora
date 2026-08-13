@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import { resolveTextModel } from "@/lib/model-config";
 
 /**
  * 依 prompt 上下文推寫資產的外觀描述。
@@ -13,6 +14,8 @@ import { z } from "zod";
  */
 
 const inputSchema = z.object({
+  /** 文字模型覆寫;留空用內建預設 */
+  textModel: z.string().optional(),
   name: z.string().min(1, "請提供名稱"),
   /** 這個名稱出現過的分鏡描述,給模型判斷它是人、地點還是物件 */
   contexts: z.array(z.string()).min(1, "至少要有一段上下文"),
@@ -69,7 +72,8 @@ export async function inferAsset(
     ...contexts.map((c, i) => `${i + 1}. ${c}`),
   ].join("\n");
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+  const model = resolveTextModel(parsed.data.textModel ?? "");
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   try {
     const res = await fetch(url, {

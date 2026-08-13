@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useFrameStore } from "@/stores/use-frame-store";
+import { useModelConfigStore } from "@/stores/use-model-config-store";
 import { useCharacterAssetStore } from "@/stores/use-character-asset-store";
 import { splitNovel, type NovelScene, type NovelCharacter } from "@/actions/split-novel";
 import { generateStoryboard } from "@/actions/generate-storyboard";
@@ -53,7 +54,10 @@ export function NovelImportDialog({ projectId }: { projectId: string }) {
 
   async function handleSplit() {
     setBusy(true);
-    const result = await splitNovel({ text });
+    const result = await splitNovel({
+      text,
+      textModel: useModelConfigStore.getState().textModel,
+    });
     setBusy(false);
 
     if (!result.success) {
@@ -96,6 +100,7 @@ export function NovelImportDialog({ projectId }: { projectId: string }) {
     for (const [i, scene] of targets.entries()) {
       setProgress(`第 ${i + 1}/${targets.length} 場：${scene.title}`);
       const result = await generateStoryboard({
+        textModel: useModelConfigStore.getState().textModel,
         premise: `${scene.title}\n\n${scene.synopsis}`,
         frameCount: scene.suggestedShots,
         mentionableAssets: mentionable,

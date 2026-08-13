@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import { resolveTextModel } from "@/lib/model-config";
 import {
   CAMERA_MOVEMENTS,
   VISUAL_STYLES,
@@ -9,6 +10,8 @@ import {
 } from "@/lib/schemas";
 
 const inputSchema = z.object({
+  /** 文字模型覆寫;留空用內建預設 */
+  textModel: z.string().optional(),
   premise: z.string().min(1, "請輸入故事 / 主題"),
   frameCount: z.number().int().min(2).max(24).default(8),
   genre: z.string().optional(),
@@ -131,7 +134,8 @@ export async function generateStoryboard(
     .filter(Boolean)
     .join("\n");
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+  const model = resolveTextModel(parsed.data.textModel ?? "");
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   try {
     const res = await fetch(url, {

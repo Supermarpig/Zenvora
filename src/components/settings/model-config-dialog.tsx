@@ -25,8 +25,10 @@ import { useModelConfigStore } from "@/stores/use-model-config-store";
 import {
   imageModelOptions,
   videoModelOptions,
+  TEXT_MODEL_OPTIONS,
   resolveImageModel,
   resolveVideoModel,
+  resolveTextModel,
 } from "@/lib/model-config";
 import { customModelSchema } from "@/lib/schemas";
 
@@ -40,9 +42,11 @@ import { customModelSchema } from "@/lib/schemas";
 export function ModelConfigDialog() {
   const imageModel = useModelConfigStore((s) => s.imageModel);
   const videoModel = useModelConfigStore((s) => s.videoModel);
+  const textModel = useModelConfigStore((s) => s.textModel);
   const customImageModels = useModelConfigStore((s) => s.customImageModels);
   const setImageModel = useModelConfigStore((s) => s.setImageModel);
   const setVideoModel = useModelConfigStore((s) => s.setVideoModel);
+  const setTextModel = useModelConfigStore((s) => s.setTextModel);
   const addCustomImageModel = useModelConfigStore((s) => s.addCustomImageModel);
   const removeCustomImageModel = useModelConfigStore(
     (s) => s.removeCustomImageModel
@@ -128,6 +132,28 @@ export function ModelConfigDialog() {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>文字預設模型</Label>
+            <Select
+              value={resolveTextModel(textModel)}
+              onValueChange={setTextModel}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {TEXT_MODEL_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              AI 拆鏡、粗剪、匯入小說、計畫預審、推寫資產都用這個模型。
+            </p>
           </div>
 
           <div className="space-y-2 rounded-lg border p-3">

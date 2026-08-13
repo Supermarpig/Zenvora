@@ -637,7 +637,7 @@ export const modelConfigSchema = z.object({
 **實作時的兩個修正**(已完成的版本與上面初稿不同):
 
 1. **預設值用空字串而非寫死 model id**。若把 `"gemini-2.5-flash-image"` 存進 store,使用者的舊設定會把內建更新鎖住 —— 之後改內建預設對他們無效。空字串代表「跟隨內建」。
-2. **`textModel` 沒有實作**。`generate-storyboard.ts` 與 `generate-next-frame.ts` 是 server action,client store 傳不進去,要改 input schema;而文字模型在免費層只有 flash 可選,價值低於成本。
+2. **`textModel` 走 action input 而非讀 store**。server action 讀不到 client store,所以六個文字 action 一律加一個 optional `textModel` 欄位,由呼叫端傳入;action 內部用 `resolveTextModel()` 解析,留空即內建預設。
 
 **關鍵限制:金鑰不進這個 store。** 金鑰必須留在 server 端環境變數,前端 store 只存 model id 與標籤。理由:`localStorage` 可被任何同源腳本讀取,把 API key 放進去等於放棄 server action 的保護 —— 這與 v0.1 spec 風險章節「API key 一律走 server action,前端不碰 key」一致,**不可為了對標而讓步**。
 
@@ -963,14 +963,14 @@ const STYLE_LENS: Record<string, { verbose: string; compact: string }>
 
 ### N6 模型配置 UI(小 · 無依賴)
 
-**2026-08-13 完成,但 textModel 未做(理由見下)。**
+**2026-08-13 完成(含 textModel)。**
 
 - [x] ~~`modelConfigSchema` + store(**不含金鑰**)~~ —— `use-model-config-store.ts`,空字串代表「用內建預設」,所以沒設定過的行為完全不變、內建預設也能隨版本更新生效
 - [x] ~~設定 UI~~ —— 首頁 header 的「模型設定」對話框,可切生圖與生影片預設模型;`src/lib/model-config.ts` 是「覆寫優先、否則內建」的單一解析入口
 - [x] ~~自訂 model id~~ —— zod 由 enum 改為 `z.string().min(1)`。**實測**:加入 `gemini-3.1-flash-image` 後選用,送到 server 的 model 確實是它且未被 zod 擋下
 - [x] ~~收斂 `MODEL_CREDIT_COST`~~ —— 見技術債 D2
 - [x] ~~驗收:`localStorage` 不出現任何金鑰~~ —— 已程式檢查
-- [ ] **textModel 未做** —— `generate-storyboard.ts:111` 與 `generate-next-frame.ts:35` 仍硬編碼 `gemini-2.5-flash`。要支援覆寫得改 server action 的 input schema 並由 client 傳入,而文字模型在免費層可選的本來就只有 flash 一種,價值低於改動成本。等有實際需要再做。
+- [x] ~~textModel~~ —— 2026-08-13 補上。`model-config.ts` 加 `DEFAULT_TEXT_MODEL` / `TEXT_MODEL_OPTIONS` / `resolveTextModel()`,六個文字 action(`generate-storyboard`、`generate-next-frame`、`rough-cut`、`split-novel`、`review-plan-ai`、`infer-asset`)的 input 都加 `textModel?`,由呼叫端以 `useModelConfigStore.getState().textModel` 傳入。**實測**:store 塞入不存在的 `gemini-zenvora-probe-404` 後跑「AI 深度檢查」,Google 回 `models/gemini-zenvora-probe-404 is not found` —— 證明設定值真的進到 URL;改回 `gemini-2.5-flash` 後同一份分鏡成功回傳 2 項觀察(連戲 + 節奏)
 
 **連帶影響**:生圖與生影片面板的模型下拉現在以設定值為預設,但仍可臨時改單次生成用的模型 —— 設定是預設值而非鎖定。
 

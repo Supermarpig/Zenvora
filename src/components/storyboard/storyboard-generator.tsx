@@ -24,6 +24,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useFrameStore } from "@/stores/use-frame-store";
+import { useModelConfigStore } from "@/stores/use-model-config-store";
 import { useProjectStore } from "@/stores/use-project-store";
 import { useCharacterAssetStore } from "@/stores/use-character-asset-store";
 import { useGenerateStoryboard } from "@/hooks/use-generate-storyboard";
@@ -57,6 +58,7 @@ export function StoryboardGenerator({
     }
     try {
       const shots = await gen.mutateAsync({
+        textModel: useModelConfigStore.getState().textModel,
         premise: premise.trim(),
         frameCount: count,
         genre: genre.trim() || undefined,

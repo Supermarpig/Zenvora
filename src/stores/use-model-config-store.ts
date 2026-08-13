@@ -11,10 +11,12 @@ import type { CustomModel } from "@/lib/schemas";
  */
 interface ModelConfigState {
   imageModel: string;
+  textModel: string;
   videoModel: string;
   customImageModels: CustomModel[];
 
   setImageModel: (id: string) => void;
+  setTextModel: (id: string) => void;
   setVideoModel: (id: string) => void;
   addCustomImageModel: (model: CustomModel) => void;
   removeCustomImageModel: (id: string) => void;
@@ -25,10 +27,12 @@ export const useModelConfigStore = create<ModelConfigState>()(
   persist(
     (set) => ({
       imageModel: "",
+      textModel: "",
       videoModel: "",
       customImageModels: [],
 
       setImageModel: (id) => set({ imageModel: id }),
+      setTextModel: (id) => set({ textModel: id }),
       setVideoModel: (id) => set({ videoModel: id }),
 
       addCustomImageModel: (model) =>
@@ -47,7 +51,8 @@ export const useModelConfigStore = create<ModelConfigState>()(
           imageModel: state.imageModel === id ? "" : state.imageModel,
         })),
 
-      reset: () => set({ imageModel: "", videoModel: "", customImageModels: [] }),
+      reset: () =>
+        set({ imageModel: "", textModel: "", videoModel: "", customImageModels: [] }),
     }),
     { name: "frameforge-model-config" }
   )

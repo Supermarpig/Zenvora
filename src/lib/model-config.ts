@@ -9,16 +9,35 @@ import type { CustomModel } from "./schemas";
  * 完全不變,內建預設也能隨版本更新生效(不會被舊的初始化資料鎖住)。
  */
 
-export const DEFAULT_IMAGE_MODEL = "gemini-2.5-flash-image";
-
 export interface ModelOption {
   value: string;
   label: string;
 }
 
+export const DEFAULT_IMAGE_MODEL = "gemini-2.5-flash-image";
+
+/**
+ * 文字模型(生成分鏡、粗剪、拆小說、預審、推寫資產都用它)。
+ *
+ * 免費層目前只有 flash 系列可用,所以這個設定的實際選擇空間小 ——
+ * 留著是為了 Google 改版時不必改六個 server action。
+ */
+export const DEFAULT_TEXT_MODEL = "gemini-2.5-flash";
+
+export const TEXT_MODEL_OPTIONS: ModelOption[] = [
+  { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash（免費層可用）" },
+  { value: "gemini-3.1-flash", label: "Gemini 3.1 Flash" },
+  { value: "gemini-3-pro", label: "Gemini 3 Pro（付費）" },
+];
+
 /** 生效的生圖模型:使用者覆寫優先,否則內建預設 */
 export function resolveImageModel(override: string): string {
   return override.trim() || DEFAULT_IMAGE_MODEL;
+}
+
+/** 生效的文字模型:使用者覆寫優先,否則內建預設 */
+export function resolveTextModel(override: string): string {
+  return override.trim() || DEFAULT_TEXT_MODEL;
 }
 
 /** 生效的生影片模型:使用者覆寫優先,否則內建預設 */

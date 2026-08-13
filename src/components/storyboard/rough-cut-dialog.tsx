@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useFrameStore } from "@/stores/use-frame-store";
+import { useModelConfigStore } from "@/stores/use-model-config-store";
 import {
   suggestRoughCut,
   type RoughCutSuggestion,
@@ -49,6 +50,7 @@ export function RoughCutDialog({ projectId }: { projectId: string }) {
     setHandled(new Set());
 
     const result = await suggestRoughCut({
+      textModel: useModelConfigStore.getState().textModel,
       shots: frames.map((f, i) => ({
         shot: i + 1,
         prompt: f.prompt,

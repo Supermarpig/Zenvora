@@ -285,6 +285,8 @@ export type CustomModel = z.infer<typeof customModelSchema>;
 export const modelConfigSchema = z.object({
   /** 生圖預設模型;空字串 = 用內建預設 */
   imageModel: z.string().default(""),
+  /** 文字模型(生成分鏡、粗剪、拆小說、預審);空字串 = 用內建預設 */
+  textModel: z.string().default(""),
   /** 生影片預設模型;空字串 = 用內建預設 */
   videoModel: z.string().default(""),
   /** 內建清單沒有的模型,讓使用者不必等改 code 就能試新模型 */
