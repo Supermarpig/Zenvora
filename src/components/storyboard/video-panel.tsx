@@ -27,7 +27,7 @@ import {
   VIDEO_MODELS,
   getModelOption,
 } from "@/lib/video";
-import type { VideoAspectRatio } from "@/lib/video/types";
+import type { VideoAspectRatio, VideoMode } from "@/lib/video/types";
 import { useModelConfigStore } from "@/stores/use-model-config-store";
 import { resolveVideoModel } from "@/lib/model-config";
 
@@ -35,6 +35,19 @@ const ASPECT_OPTIONS: { value: VideoAspectRatio; label: string }[] = [
   { value: "16:9", label: "16:9 橫向" },
   { value: "9:16", label: "9:16 直向" },
   { value: "1:1", label: "1:1 方形" },
+];
+
+/**
+ * 生成鏈路。`auto` 是預設,行為與先前完全一致(有關鍵幀走 i2v、沒有走 t2v);
+ * 明確選 i2v/t2v 則不再自動退讓 —— 選了 i2v 卻沒有關鍵幀會直接報錯,
+ * 而不是靜默改走 t2v 燒掉額度。
+ */
+type LinkChoice = "auto" | VideoMode;
+
+const LINK_OPTIONS: { value: LinkChoice; label: string }[] = [
+  { value: "auto", label: "自動選鏈路（有關鍵幀就圖生）" },
+  { value: "i2v", label: "圖生影片 i2v（品質優先）" },
+  { value: "t2v", label: "文生影片 t2v（無圖出草稿）" },
 ];
 
 interface VideoPanelProps {
@@ -54,6 +67,7 @@ export function VideoPanel({ frameId }: VideoPanelProps) {
   const [aspect, setAspect] = useState<VideoAspectRatio>("16:9");
   const [withAudio, setWithAudio] = useState(false);
   const [hasImage, setHasImage] = useState<boolean | null>(null);
+  const [link, setLink] = useState<LinkChoice>("auto");
 
   useEffect(() => {
     let alive = true;
@@ -72,11 +86,27 @@ export function VideoPanel({ frameId }: VideoPanelProps) {
       return;
     }
     const img = await loadImage(frameId);
-    const mode = img ? "i2v" : "t2v";
+    const mode: VideoMode = link === "auto" ? (img ? "i2v" : "t2v") : link;
+
+    if (mode === "i2v" && !img) {
+      toast.error(
+        "圖生影片需要關鍵幀圖 —— 請先生成起始幀，或改選「文生影片 t2v」"
+      );
+      return;
+    }
+    if (mode === "i2v" && !getModelOption(model)?.supportsImage) {
+      toast.error("這個引擎不支援圖生影片，請改選其他引擎或用文生影片");
+      return;
+    }
+
     const r = await generate({
       mode,
-      prompt: buildVeoPrompt(frame, { mute: !withAudio }),
-      imageDataUrl: img ?? undefined,
+      // t2v 沒有參考圖,prompt 裡那句「必須符合參考圖」要拿掉
+      prompt: buildVeoPrompt(frame, {
+        mute: !withAudio,
+        hasReferenceImage: mode === "i2v",
+      }),
+      imageDataUrl: mode === "i2v" ? (img ?? undefined) : undefined,
       aspectRatio: aspect,
       durationSec: Math.min(15, Math.max(2, frame.duration)),
       withAudio,
@@ -138,7 +168,13 @@ export function VideoPanel({ frameId }: VideoPanelProps) {
           <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 text-muted-foreground">
             <Clapperboard className="h-8 w-8" />
             <p className="text-xs">
-              {hasImage === false
+              {link === "t2v"
+                ? "文生影片：不使用關鍵幀圖"
+                : link === "i2v"
+                ? hasImage === false
+                  ? "圖生影片：尚無關鍵幀圖，需先生成起始幀"
+                  : "以關鍵幀圖生成影片"
+                : hasImage === false
                 ? "尚無關鍵幀圖 → 將用文字生成影片"
                 : "以關鍵幀圖生成影片"}
             </p>
@@ -157,6 +193,22 @@ export function VideoPanel({ frameId }: VideoPanelProps) {
               {VIDEO_MODELS.map((m) => (
                 <SelectItem key={m.model} value={m.model}>
                   {m.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={link}
+            onValueChange={(v) => setLink(v as LinkChoice)}
+          >
+            <SelectTrigger className="text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {LINK_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
                 </SelectItem>
               ))}
             </SelectContent>

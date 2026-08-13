@@ -138,6 +138,14 @@ export function buildExtendPrompt(
 
 interface VeoOptions {
   mute?: boolean;
+  /**
+   * 這次生成有沒有起始參考圖。
+   *
+   * **預設 true 是為了不動既有呼叫方的輸出。** 純文生影片(t2v)沒有參考圖,
+   * 若照樣叫模型「必須符合上傳參考圖的長相」,是在指向一張不存在的圖 ——
+   * 那句約束要拿掉。
+   */
+  hasReferenceImage?: boolean;
 }
 
 /**
@@ -158,9 +166,11 @@ export function buildVeoPrompt(frame: Frame, opts: VeoOptions = {}): string {
     sections.push(cam + ".");
   }
 
-  sections.push(
-    `The characters must match the appearance of the person(s) in the uploaded reference photo exactly — same face, hairstyle, body proportions, and clothing.`
-  );
+  if (opts.hasReferenceImage ?? true) {
+    sections.push(
+      `The characters must match the appearance of the person(s) in the uploaded reference photo exactly — same face, hairstyle, body proportions, and clothing.`
+    );
+  }
 
   sections.push(
     `Do not render any text, subtitles, captions, labels, or watermarks in the video. Pure visual storytelling only.`

@@ -983,7 +983,11 @@ const STYLE_LENS: Record<string, { verbose: string; compact: string }>
 - [ ] seedance provider 接首尾幀(欄位名需查證)
 - [ ] `ImageGenerator` 支援 slot(`"start" | "end"`)
 - [ ] `VideoPanel` 結束幀欄位(依 `supportsEndFrame` 顯示)
-- [ ] 雙視頻鏈路:t2v / i2v 明確入口(§4.8)
+- [x] ~~雙視頻鏈路:t2v / i2v 明確入口(§4.8)~~ —— 2026-08-13 完成。`VideoPanel` 加鏈路下拉,三個選項:`auto`(預設,行為與先前完全一致)/ `i2v` / `t2v`。
+  **明確選了就不再自動退讓**:選 i2v 卻沒有關鍵幀時直接報錯,不靜默改走 t2v 燒掉額度;選 i2v 但引擎 `supportsImage === false` 也擋下。
+  同時修掉一個既有缺陷:`buildVeoPrompt` 無條件加「必須符合上傳參考圖的長相」,但 t2v 根本沒有參考圖 —— 加 `hasReferenceImage` 選項(**預設 true,既有呼叫方輸出不變**),t2v 時省掉那一句。
+  **未採用** spec 原本建議的「i2v 改走 `buildFlowPrompt`」:那會改動目前主路徑的 payload,而生影片沒有免費額度、無法驗證品質是否真的更好。留待有額度時再評估。
+  **實測**:選 i2v 且無關鍵幀 → toast 明確提示且 network 面板無任何 server action 請求(擋在送出前);4 個單元測試釘住 `hasReferenceImage` 的預設等價與「只少那一段」。t2v 的實際送出未跑 —— 生影片要真金白銀
 - [x] ~~宮格 4/6/9 × 橫直版(§4.9)~~ —— 2026-08-13 完成。實作為 `gridSpec()`(非初稿的 `gridLayout()`),同時回傳排版、整張比例與**每格的近似比例**;`buildGridPrompt` 加 `orientation` 參數,UI 可選格數與方向(預設 9 格直版,因為這個工具主要用於短影音)。8 個單元測試釘住排版數學,並實測 6 格橫版切圖順序正確
 - [ ] 驗收:只有起始幀時 payload 與現行完全一致(防回歸)
 
