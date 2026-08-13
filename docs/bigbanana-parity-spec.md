@@ -1005,7 +1005,9 @@ const STYLE_LENS: Record<string, { verbose: string; compact: string }>
   `actions/infer-asset.ts` 讀該名稱出現過的分鏡描述(最多 6 段),推斷 **kind** 與英文外觀草稿 —— 與其要使用者從零想外觀,不如給他一份能改的稿。
   **實測**:三鏡引用 `@管家` 與 `@老宅書房`,前者正確推成 `character`(外觀綜合了 worn black tailcoat / white gloves / weathered face),後者正確推成 `scene`(dark walnut panelling / bookshelves / leather armchairs)
 - [ ] **批次生成參考圖未做** —— 生圖需要 API 額度(免費層 `limit: 0`),無法驗證產出。資產建立後可逐個到資產庫按「生成設定圖」
-- [ ] **`ownerAssetId` 只有 schema,沒有 UI** —— 服裝歸屬哪個人物尚未能在介面設定。要用到它的情境(換裝)屬更後面的功能
+- [x] ~~`ownerAssetId` UI~~ —— 2026-08-13 完成。資產編輯器加「屬於哪個人物」下拉,**只在種類為服裝時出現**(與「角色類型」只在人物時出現同一套邏輯);選項只列人物資產,可選「未指定(通用服裝)」。卡片上會顯示「屬於 X」。
+  改種類離開服裝時歸屬一併清掉,免得留下看不見的舊值。**刪除人物時,指向它的服裝改回未指定**(store `deleteAsset` 一併處理),不留斷掉的參照。
+  **實測**:建服裝並指定歸屬 → localStorage 的 `ownerAssetId` 正確指向該人物、卡片顯示「屬於 管家」;把歸屬改到另一個人物後刪掉那個人物 → 服裝的 owner 變回 none(非 dangling id)、卡片的「屬於」那行消失。測試資產已全部刪除還原
 
 驗收另有 11 個單元測試涵蓋分組出句與各 kind 的參考圖句式。
 

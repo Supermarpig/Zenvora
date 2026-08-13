@@ -78,7 +78,14 @@ export const useCharacterAssetStore = create<CharacterAssetState>()(
         asset?.referenceImageKeys.forEach((k) => {
           void deleteAssetImage(k);
         });
-        set((state) => ({ assets: state.assets.filter((a) => a.id !== id) }));
+        set((state) => ({
+          assets: state.assets
+            .filter((a) => a.id !== id)
+            // 指向被刪人物的服裝改回「未指定」,不留斷掉的參照
+            .map((a) =>
+              a.ownerAssetId === id ? { ...a, ownerAssetId: undefined } : a
+            ),
+        }));
       },
 
       setReferenceImages: (id, keys) => {

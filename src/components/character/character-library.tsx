@@ -47,6 +47,9 @@ import {
   type AssetKind,
 } from "@/lib/schemas";
 
+/** Radix Select 不接受空字串當 item value,所以「未指定」用哨兵值表示 */
+const NO_OWNER = "__none__";
+
 const TYPE_BADGE: Record<string, string> = {
   actor: "bg-violet-500/15 text-violet-600 dark:text-violet-300",
   presenter: "bg-sky-500/15 text-sky-600 dark:text-sky-300",
@@ -171,6 +174,12 @@ function AssetCard({
 }) {
   const thumb = useAssetImage(asset.referenceImageKeys[0]);
   const deleteAsset = useCharacterAssetStore((s) => s.deleteAsset);
+  // 只取名字(字串)而非物件,selector 的回傳值才穩定
+  const ownerName = useCharacterAssetStore((s) =>
+    asset.ownerAssetId
+      ? s.assets.find((a) => a.id === asset.ownerAssetId)?.name
+      : undefined
+  );
   const generateSheet = useGenerateCharacterSheet();
 
   async function handleGenerate() {
@@ -246,6 +255,11 @@ function AssetCard({
             </Button>
           </div>
         </div>
+        {ownerName && (
+          <p className="text-[11px] text-muted-foreground">
+            屬於 <span className="font-medium">{ownerName}</span>
+          </p>
+        )}
         <p className="line-clamp-2 text-xs text-muted-foreground">
           {asset.appearance}
         </p>
@@ -312,8 +326,16 @@ function AssetEditorBody({
   const [kind, setKind] = useState<AssetKind>(asset?.kind ?? "character");
   const [type, setType] = useState<CharacterAssetType>(asset?.type ?? "actor");
   const [appearance, setAppearance] = useState(asset?.appearance ?? "");
+  // 空字串 = 未指定。Radix Select 不接受空字串當 item value,所以用 NO_OWNER 當哨兵
+  const [ownerAssetId, setOwnerAssetId] = useState(asset?.ownerAssetId ?? "");
 
   const isEdit = !!asset;
+
+  // 選 s.assets(參考穩定)後在 render body 過濾,不要在 selector 內回傳新陣列
+  const allAssets = useCharacterAssetStore((s) => s.assets);
+  const characterAssets = allAssets.filter(
+    (a) => (a.kind ?? "character") === "character"
+  );
 
   // 參考圖改讀 store,生成/上傳後即時反映
   const liveAsset = useCharacterAssetStore((s) =>
@@ -326,16 +348,25 @@ function AssetEditorBody({
       toast.error("請填寫角色名稱與外觀描述");
       return;
     }
+    // 歸屬只在服裝有意義:改成其他種類時一併清掉,免得留下看不見的舊值
+    const owner = kind === "costume" ? ownerAssetId || undefined : undefined;
     if (isEdit && asset) {
       updateAsset(asset.id, {
         name: name.trim(),
         kind,
         type,
+        ownerAssetId: owner,
         appearance: appearance.trim(),
       });
       toast.success("已更新資產");
     } else {
-      addAsset({ name: name.trim(), kind, type, appearance: appearance.trim() });
+      addAsset({
+        name: name.trim(),
+        kind,
+        type,
+        ownerAssetId: owner,
+        appearance: appearance.trim(),
+      });
       toast.success(`已建立「${name.trim()}」`);
     }
     onClose();
@@ -426,6 +457,34 @@ function AssetEditorBody({
               </SelectContent>
             </Select>
           </div>
+
+          {/* 服裝歸屬:哪個人物穿這套。只在服裝時出現 */}
+          {kind === "costume" && (
+            <div className="space-y-1.5">
+              <Label className="text-xs">屬於哪個人物</Label>
+              <Select
+                value={ownerAssetId || NO_OWNER}
+                onValueChange={(v) => setOwnerAssetId(v === NO_OWNER ? "" : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_OWNER}>未指定（通用服裝）</SelectItem>
+                  {characterAssets.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>
+                      {a.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {characterAssets.length === 0 && (
+                <p className="text-[11px] text-muted-foreground">
+                  還沒有人物資產，先建立人物才能指定歸屬。
+                </p>
+              )}
+            </div>
+          )}
 
           {/* 角色子類只在人物時有意義,其餘種類藏起來避免誤導 */}
           {kind === "character" && (
