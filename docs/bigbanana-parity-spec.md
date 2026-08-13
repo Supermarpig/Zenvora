@@ -1061,7 +1061,10 @@ const STYLE_LENS: Record<string, { verbose: string; compact: string }>
 - [ ] `seasonSchema` / `episodeSchema` / `frameSchema.episodeId`(可選,不改 `projectId`)
 - [x] ~~`worldview` 結構化~~ —— 2026-08-13 完成。`setting` / `visualBible` / `musicMood` + `regions[].locations[]` 兩層結構,地點可綁 `sceneAssetId` 讓「世界觀裡的地點」與「可 @ 引用的場景資產」對上。地圖依 §8.3 列為非目標
 - [x] ~~`visualBible` 注入所有生成 prompt~~ —— 位置在**角色一致性之後、逐鏡描述之前**:基調在中間才不會被逐鏡描述蓋掉,也不會壓過角色的參考圖約束。三個生圖入口都接上,實測 payload 為四段且基調確實在畫面描述之前;未填或全空白時輸出與先前完全相同(不留空段)
-- [ ] 小說匯入:兩階段確認(先拆集/場,確認後才拆鏡)
+- [x] ~~小說匯入:兩階段確認~~ —— 2026-08-13 完成。第一階段只拆場次與角色,**不建立任何分鏡資料**;確認後才逐場拆鏡。
+  第二階段**直接複用 `generate-storyboard`** 而不另寫拆鏡邏輯。逐場序列呼叫而非並行 —— 免費層有 RPM 限制,並行很容易撞 429。
+  順便產出角色清單並可一鍵建成資產,建立後拆鏡就能用 `@` 引用 —— 這條銜接是實測過的:建 2 個資產 → 略過 2 場 → 從 1 場產生的 3 鏡全部帶 `@小雨` 引用。
+  長文上限 50,000 字並明確提示;spec 原本設計的「分段處理 + 摘要串接」沒做 —— `gemini-2.5-flash` 的 context 足以吃下一般章節,先用上限換簡單
 - [ ] 專案 / 全域備份(共用 `snapshotSchema`)
 - [ ] 驗收:現有無季/集專案完全不受影響
 
