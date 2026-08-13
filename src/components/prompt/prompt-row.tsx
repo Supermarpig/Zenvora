@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useTransition } from "react";
-import { Grid3X3, LayoutGrid, Sparkles, Loader2, ImageIcon, Upload, Download, Trash2, Scissors, VolumeX, Volume2, Clapperboard, FastForward } from "lucide-react";
+import { Grid3X3, LayoutGrid, Sparkles, Loader2, ImageIcon, Upload, Download, Trash2, Scissors, VolumeX, Volume2, Clapperboard, FastForward, ChevronUp, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,12 +32,16 @@ export function PromptRow({ frame }: { frame: Frame }) {
   const updateFrame = useFrameStore((s) => s.updateFrame);
   const insertFrameAfter = useFrameStore((s) => s.insertFrameAfter);
   const splitFrame = useFrameStore((s) => s.splitFrame);
+  const reorderFrames = useFrameStore((s) => s.reorderFrames);
   const frames = useFrameStore((s) => s.frames);
   const allFrames = frames.filter((f) => f.projectId === frame.projectId);
   const project = useProjectStore((s) => s.getProject(frame.projectId));
   const allAssets = useCharacterAssetStore((s) => s.assets);
 
-  const { imageData, save, remove } = useImageStorage(frame.id);
+  const { imageData, save, remove } = useImageStorage(
+    frame.id,
+    frame.imageBase64Key
+  );
   const generateMutation = useGenerateImage();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -212,6 +216,17 @@ export function PromptRow({ frame }: { frame: Frame }) {
     toast.success(`已將 #${frame.order + 1} 拆成 ${count} 段`);
   }
 
+  const myIndex = sorted.findIndex((f) => f.id === frame.id);
+
+  /** 與相鄰分鏡交換位置。導出剪映完全依賴 order,所以順序要能改。 */
+  function handleMove(direction: -1 | 1) {
+    const ids = sorted.map((f) => f.id);
+    const target = myIndex + direction;
+    if (target < 0 || target >= ids.length) return;
+    [ids[myIndex], ids[target]] = [ids[target], ids[myIndex]];
+    reorderFrames(frame.projectId, ids);
+  }
+
   async function handleCopyGrid(size: 9 | 25) {
     const gridPrompt = buildGridPrompt([liveFrame], size, characters);
     await navigator.clipboard.writeText(gridPrompt);
@@ -230,9 +245,31 @@ export function PromptRow({ frame }: { frame: Frame }) {
       <div className="flex gap-3 p-3">
         {/* 左：序號 + 圖片 + 控制 */}
         <div className="flex shrink-0 flex-col items-center gap-1.5">
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-            {frame.order + 1}
-          </span>
+          <div className="flex items-center gap-0.5">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-5 w-5"
+              disabled={myIndex <= 0}
+              onClick={() => handleMove(-1)}
+              title="上移"
+            >
+              <ChevronUp className="h-3 w-3" />
+            </Button>
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+              {frame.order + 1}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-5 w-5"
+              disabled={myIndex < 0 || myIndex >= sorted.length - 1}
+              onClick={() => handleMove(1)}
+              title="下移"
+            >
+              <ChevronDown className="h-3 w-3" />
+            </Button>
+          </div>
 
           {/* 圖片區 */}
           <div className="group relative h-20 w-32 overflow-hidden rounded bg-muted">

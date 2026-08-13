@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PromptTable } from "@/components/prompt/prompt-table";
+import { GridSequenceTools } from "@/components/prompt/grid-sequence-tools";
 import { CharacterManager } from "@/components/storyboard/character-manager";
 import { useProjectStore } from "@/stores/use-project-store";
 import { useFrameStore } from "@/stores/use-frame-store";
@@ -51,6 +52,9 @@ export default function PromptsPage({
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-6 py-8">
+        {frames.length > 0 && (
+          <GridSequenceTools projectId={id} frames={frames} />
+        )}
         <PromptTable frames={frames} />
       </main>
     </div>

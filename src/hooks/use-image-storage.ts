@@ -3,7 +3,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { saveImage, loadImage, deleteImage } from "@/lib/db";
 
-export function useImageStorage(frameId: string | undefined) {
+/**
+ * @param revalidateKey 外部直接寫入 IndexedDB(例如九宮格切圖)時,傳入會變動的值
+ *   讓這個 hook 重新載入;只靠 frameId 的話畫面會停在舊狀態。
+ */
+export function useImageStorage(
+  frameId: string | undefined,
+  revalidateKey?: string
+) {
   const [imageData, setImageData] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -24,7 +31,7 @@ export function useImageStorage(frameId: string | undefined) {
     return () => {
       alive = false;
     };
-  }, [frameId]);
+  }, [frameId, revalidateKey]);
 
   const save = useCallback(
     async (base64: string) => {
