@@ -1,7 +1,4 @@
-// 這裡的 .ts 副檔名不是筆誤:本模組被 tests/ 直接 import,而 Node 的 ESM
-// 解析要求 value import 帶副檔名(type-only import 會被 strip 掉,不受影響)。
-// tsconfig 已開 allowImportingTsExtensions,Turbopack 也照樣解析。
-import { findMissingMentions } from "./mention.ts";
+import { findMissingMentions } from "./mention";
 import type { CharacterAsset, Frame } from "./schemas";
 
 /**

@@ -7,19 +7,41 @@ import { Button } from "@/components/ui/button";
 import { useFrameStore } from "@/stores/use-frame-store";
 import { useProjectStore } from "@/stores/use-project-store";
 import { saveImage } from "@/lib/db";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { splitGrid, fileToDataUrl } from "@/lib/grid-split";
-import { buildGridPrompt } from "@/lib/storyboard-prompt";
+import {
+  buildGridPrompt,
+  gridSpec,
+  type GridSize,
+  type GridOrientation,
+} from "@/lib/storyboard-prompt";
 import type { Frame } from "@/lib/schemas";
 
-const GRID_COLS = 3;
-const GRID_ROWS = 3;
-const PANEL_COUNT = GRID_COLS * GRID_ROWS;
+/** 25 格刻意不開放:1024px 除以 5 每格只剩約 205px,切出來不堪用 */
+const SIZE_OPTIONS: { value: GridSize; label: string }[] = [
+  { value: 4, label: "4 格" },
+  { value: 6, label: "6 格" },
+  { value: 9, label: "9 格" },
+];
+
+const ORIENTATION_OPTIONS: { value: GridOrientation; label: string }[] = [
+  { value: "portrait", label: "直版 9:16" },
+  { value: "landscape", label: "橫版 16:9" },
+];
 
 /**
- * 連續九宮格工作流:一次生圖換九格畫面。
+ * 連續宮格工作流:一次生圖換多格畫面。
  *
  * 跟每列那顆「9 宮格 Prompt」不同 —— 那個是同一個分鏡的九種鏡位(挑鏡用),
- * 這裡是九個「不同分鏡」各佔一格,所以切開後可以依序填回去。
+ * 這裡是多個「不同分鏡」各佔一格,所以切開後可以依序填回去。
+ *
+ * 方向很重要:短影音是 9:16,用橫版比例生直版短片的分鏡會讓每格構圖全部走掉。
  */
 export function GridSequenceTools({
   projectId,
@@ -30,21 +52,33 @@ export function GridSequenceTools({
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [size, setSize] = useState<GridSize>(9);
+  // 預設直版:這個工具的主要用途是短影音
+  const [orientation, setOrientation] = useState<GridOrientation>("portrait");
   const updateFrame = useFrameStore((s) => s.updateFrame);
   const project = useProjectStore((s) => s.getProject(projectId));
 
-  const targets = frames.slice(0, PANEL_COUNT);
+  const spec = gridSpec(size, orientation);
+  const panelCount = spec.cols * spec.rows;
+  const targets = frames.slice(0, panelCount);
 
   async function handleCopyPrompt() {
-    if (frames.length < PANEL_COUNT) {
+    if (frames.length < panelCount) {
       toast.error(
-        `需要至少 ${PANEL_COUNT} 個分鏡（目前 ${frames.length} 個），九宮格才填得滿`
+        `需要至少 ${panelCount} 個分鏡（目前 ${frames.length} 個），${size} 格才填得滿`
       );
       return;
     }
-    const prompt = buildGridPrompt(targets, 9, project?.characters ?? []);
+    const prompt = buildGridPrompt(
+      targets,
+      size,
+      project?.characters ?? [],
+      orientation
+    );
     await navigator.clipboard.writeText(prompt);
-    toast.success(`已複製分鏡 1–${PANEL_COUNT} 的連續九宮格 Prompt`);
+    toast.success(
+      `已複製分鏡 1–${panelCount} 的 ${spec.cols}×${spec.rows} Prompt（整張 ${spec.imageAspect}，每格 ${spec.panelAspect}）`
+    );
   }
 
   async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
@@ -62,8 +96,8 @@ export function GridSequenceTools({
     try {
       const cells = await splitGrid(
         await fileToDataUrl(file),
-        GRID_COLS,
-        GRID_ROWS
+        spec.cols,
+        spec.rows
       );
 
       // imageBase64Key 全專案只當「有沒有圖」的標記(實際讀取都走 loadImage(frame.id)),
@@ -77,9 +111,9 @@ export function GridSequenceTools({
       }
 
       toast.success(
-        `已切成 ${PANEL_COUNT} 格，填入分鏡 1–${targets.length}${
-          targets.length < PANEL_COUNT
-            ? `（分鏡不足，剩下 ${PANEL_COUNT - targets.length} 格未使用）`
+        `已切成 ${panelCount} 格，填入分鏡 1–${targets.length}${
+          targets.length < panelCount
+            ? `（分鏡不足，剩下 ${panelCount - targets.length} 格未使用）`
             : ""
         }`
       );
@@ -96,14 +130,46 @@ export function GridSequenceTools({
     <div className="mb-4 rounded-lg border bg-muted/30 p-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="text-sm">
-          <p className="font-medium">連續九宮格：一次生圖換九格</p>
+          <p className="font-medium">連續宮格：一次生圖換 {panelCount} 格</p>
           <p className="text-xs text-muted-foreground">
-            複製 Prompt → 貼到 AI Studio 生成一張 3×3 圖 → 下載後匯入，自動切開填入分鏡
-            1–{PANEL_COUNT}
+            複製 Prompt → 貼到 AI Studio 生成一張 {spec.cols}×{spec.rows} 圖（整張{" "}
+            {spec.imageAspect}）→ 下載後匯入，自動切開填入分鏡 1–{panelCount}
           </p>
         </div>
 
         <div className="flex items-center gap-2">
+          <Select
+            value={String(size)}
+            onValueChange={(v) => setSize(Number(v) as GridSize)}
+          >
+            <SelectTrigger className="h-9 w-[88px] text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {SIZE_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={String(o.value)}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={orientation}
+            onValueChange={(v) => setOrientation(v as GridOrientation)}
+          >
+            <SelectTrigger className="h-9 w-[112px] text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {ORIENTATION_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           <input
             ref={inputRef}
             type="file"
@@ -113,7 +179,7 @@ export function GridSequenceTools({
           />
           <Button variant="outline" size="sm" onClick={handleCopyPrompt}>
             <Grid3X3 className="mr-1.5 h-4 w-4" />
-            複製九宮格 Prompt
+            複製 Prompt
           </Button>
           <Button
             variant="outline"
@@ -126,7 +192,7 @@ export function GridSequenceTools({
             ) : (
               <ImageDown className="mr-1.5 h-4 w-4" />
             )}
-            {isImporting ? "切圖中" : "匯入九宮格圖"}
+            {isImporting ? "切圖中" : "匯入宮格圖"}
           </Button>
         </div>
       </div>

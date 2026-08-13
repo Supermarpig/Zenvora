@@ -216,19 +216,24 @@ export async function deleteEndImage(frameId: string): Promise<void>
 
 **為什麼直版很重要**:短影音是 9:16。9 格直版時,合成圖應是 3×3 但**每格為 9:16 比例**(整張圖 27:16),而不是把 16:9 的格子塞進直版畫面 —— 否則每格構圖全部走掉,切出來無法直接用。
 
-改動:
+**已於 2026-08-13 完成。** 實作與初稿有三處不同:
 
 ```ts
 // storyboard-prompt.ts
-export type GridSize = 4 | 6 | 9 | 25;
-export type GridOrientation = "landscape" | "portrait";
-/** 依格數決定 cols×rows:4→2×2、6→3×2(橫)或 2×3(直)、9→3×3、25→5×5 */
-export function gridLayout(size: GridSize, orientation: GridOrientation): { cols: number; rows: number }
+export function gridSpec(size: GridSize, orientation?: GridOrientation): {
+  cols: number; rows: number;
+  imageAspect: "16:9" | "9:16";   // 整張合成圖的建議輸出比例
+  panelAspect: string;            // 每格的近似比例
+}
 ```
 
-`buildGridPrompt` 的 `strict 3×3 grid` 改為依 `gridLayout` 動態組句,並在 prompt 內明確指定每格的 aspect ratio。
+1. **回傳值多了 `panelAspect`**。初稿以為「每格比例 = 整張比例」,但那只在 cols/rows 同倍數時成立:16:9 分成 3×2,每格是 `(16/3):(9/2) ≈ 6:5`,**不是 16:9**。若沿用整張比例寫進 prompt,6 格模式的每格構圖會全歪。
+2. **`panelAspect` 用常見比例表對映**,不用最簡分數搜尋 —— 後者會算出 `13:11` 這種對模型沒有意義的比例。
+3. **修掉一個既有 bug**:`gridSize = 25` 時 prompt 仍寫死 `strict 3×3 grid`,與 25 格自相矛盾。現在依 `gridSpec` 動態組句。
 
-驗收:選 6 格直版時,產生的 prompt 說的是 2×3 且每格 9:16;匯入後 `splitGrid(url, 2, 3)` 切出 6 格,順序左上→右下正確。
+UI 預設 **9 格直版**(此工具主要用於短影音);25 格不開放,1024px 除以 5 每格只剩約 205px。
+
+驗收(已通過):9 格直版的 prompt 說 `3×3 grid ... in 9:16 overall aspect ratio ... each composed for a 9:16 frame`;切換 6 格橫版後說 `3×2 grid ... 16:9 ... 6:5 frame`;實測 6 格切圖順序左上→右下正確,且分鏡多於格數時不會亂填後面的分鏡。
 
 ---
 
@@ -979,7 +984,7 @@ const STYLE_LENS: Record<string, { verbose: string; compact: string }>
 - [ ] `ImageGenerator` 支援 slot(`"start" | "end"`)
 - [ ] `VideoPanel` 結束幀欄位(依 `supportsEndFrame` 顯示)
 - [ ] 雙視頻鏈路:t2v / i2v 明確入口(§4.8)
-- [ ] `gridLayout()` + `GridSize` 加 4/6、`GridOrientation` 橫直版(§4.9)
+- [x] ~~宮格 4/6/9 × 橫直版(§4.9)~~ —— 2026-08-13 完成。實作為 `gridSpec()`(非初稿的 `gridLayout()`),同時回傳排版、整張比例與**每格的近似比例**;`buildGridPrompt` 加 `orientation` 參數,UI 可選格數與方向(預設 9 格直版,因為這個工具主要用於短影音)。8 個單元測試釘住排版數學,並實測 6 格橫版切圖順序正確
 - [ ] 驗收:只有起始幀時 payload 與現行完全一致(防回歸)
 
 ### N2 資產庫泛化(中)
