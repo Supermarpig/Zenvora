@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { useFrameStore } from "@/stores/use-frame-store";
 import { useProjectStore } from "@/stores/use-project-store";
+import { useCharacterAssetStore } from "@/stores/use-character-asset-store";
 import { useGenerateStoryboard } from "@/hooks/use-generate-storyboard";
 import { VISUAL_STYLES } from "@/lib/schemas";
 
@@ -39,6 +40,7 @@ export function StoryboardGenerator({
   variant = "toolbar",
 }: StoryboardGeneratorProps) {
   const project = useProjectStore((s) => s.getProject(projectId));
+  const assets = useCharacterAssetStore((s) => s.assets);
   const appendFrames = useFrameStore((s) => s.appendFrames);
   const gen = useGenerateStoryboard();
 
@@ -60,6 +62,11 @@ export function StoryboardGenerator({
         genre: genre.trim() || undefined,
         style: style as (typeof VISUAL_STYLES)[number],
         characters: (project?.characters ?? []).map((c) => c.name),
+        // 只餵人物與場景 —— 道具與服裝在分鏡描述裡用 @ 引用的價值低,
+        // 名單太長反而會讓模型亂標
+        mentionableAssets: assets
+          .filter((a) => (a.kind ?? "character") === "character" || a.kind === "scene")
+          .map((a) => a.name),
       });
       appendFrames(projectId, shots);
       toast.success(`已生成 ${shots.length} 個分鏡的場景與台詞`);

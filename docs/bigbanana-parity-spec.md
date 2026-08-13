@@ -1080,7 +1080,8 @@ const STYLE_LENS: Record<string, { verbose: string; compact: string }>
 
 ### 跨項與文件
 
-- [ ] `generate-storyboard` 產出直接帶 `@` 標記(§12,N2 之後最划算的小改動)
+- [x] ~~`generate-storyboard` 產出直接帶 `@` 標記~~ —— 2026-08-13 完成。新增 `mentionableAssets` 輸入,prompt 要求模型在場景描述內用 `@名稱` 引用,並**明確禁止發明不在清單裡的 @name**。只餵人物與場景(道具與服裝在分鏡描述裡引用的價值低,名單太長反而讓模型亂標)。
+  **實測**(文字模型有免費額度,可真的跑):8 個分鏡全部帶 `@` 標記,`@小雨` 出現 7 鏡、`@老家廚房` 4 鏡,而刻意沒餵進名單的 `@銀托盤` 出現 **0 次** —— 禁止發明的約束有效
 - [ ] 決定 `usedAssetIds` 是否寫回 `castIds`(建議在編輯 prompt 時同步,非生成時)
 - [ ] 更新 [`director-console-spec.md`](./director-console-spec.md) 的「實作進度」章節(目前停在 2026-08-12,見 §2)
 

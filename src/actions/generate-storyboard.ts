@@ -16,6 +16,13 @@ const inputSchema = z.object({
   language: z.string().default("繁體中文"),
   /** 專案角色名稱,讓台詞用得上 */
   characters: z.array(z.string()).optional(),
+  /**
+   * 資產庫裡可被 `@` 引用的名稱(人物與場景)。
+   * 有值時會要求模型在 prompt 內用 `@名稱` 標記,一次補上「出場標記」與
+   * 「指涉錨定」—— 否則產出的 prompt 只會有 "The daughter" 這種泛稱,
+   * 生圖時模型無從得知該用哪張參考圖。
+   */
+  mentionableAssets: z.array(z.string()).optional(),
 });
 
 // 用 z.input:帶 default 的欄位(frameCount / language)在呼叫端可省略
@@ -77,7 +84,15 @@ export async function generateStoryboard(
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0].message };
   }
-  const { premise, frameCount, genre, style, language, characters } =
+  const {
+    premise,
+    frameCount,
+    genre,
+    style,
+    language,
+    characters,
+    mentionableAssets,
+  } =
     parsed.data;
 
   const apiKey = process.env.GOOGLE_AI_API_KEY;
@@ -92,6 +107,14 @@ export async function generateStoryboard(
     style ? `Overall visual style: ${style}.` : "",
     characters?.length
       ? `Use these existing characters where appropriate: ${characters.join(", ")}.`
+      : "",
+    mentionableAssets?.length
+      ? [
+          `The project has these reusable assets: ${mentionableAssets.join(", ")}.`,
+          `IMPORTANT: inside the "prompt" field, refer to any of them with an @ prefix followed by the EXACT name, e.g. "@${mentionableAssets[0]} walks in".`,
+          `Write @Name instead of a generic phrase like "the woman" or "the kitchen" whenever the asset applies — this is how the tool binds the shot to that asset's reference image.`,
+          `Do NOT invent @names that are not in the list above. Characters or places outside the list must be described in plain words.`,
+        ].join("\n")
       : "",
     ``,
     `For EACH shot output:`,
