@@ -899,7 +899,20 @@ const STYLE_LENS: Record<string, { verbose: string; compact: string }>
 
 `zip.ts` 特別值得測 —— 它手寫 local header / central directory / EOCD / CRC32,一個位移算錯就產生壞檔,而且**壞在使用者的剪映裡才會被發現**。驗證它時得另外起一個 Node HTTP receiver 才能把 blob 傳出瀏覽器用 `unzip -t` 檢查,那種驗證流程無法重複執行。
 
-建議:引入 vitest,先只測這四個純函式模組(不碰元件測試,那是另一個量級)。**這會需要新增 devDependency**,依專案慣例應先確認。
+**已於 2026-08-13 處理,但沒有用 vitest。** Node 22.12 的 `node:test` + `--experimental-strip-types` 可以直接跑 TypeScript,**零新增依賴**,更符合本專案慣例。
+
+可測範圍受限於瀏覽器 API 依賴:
+
+| 模組 | 瀏覽器 API | 可在 Node 測 |
+|---|---|---|
+| `zip.ts` | 無(只用 `Blob` / `TextEncoder` / `DataView`,Node 皆有) | 是,已測 |
+| `timeline-export.ts` | 無(只 `import type`) | 是,已測 |
+| `grid-split.ts` | `document.createElement("canvas")`、`new Image` | 否 |
+| `cast.ts` | 無,但頂層 `import { loadAssetImage } from "./db"`(idb-keyval) | 否 —— 需先把純函式拆出獨立模組 |
+
+後兩者若要測,得先做結構調整(`cast.ts` 把 tokenizer 拆成不依賴 db 的檔案;`grid-split.ts` 需 DOM 環境),那才會需要新增依賴,屆時再決定。
+
+`tsconfig.json` 加了 `allowImportingTsExtensions`(因為 Node ESM 要求 import 帶 `.ts` 副檔名),讓 tests 也一起被 `tsc --noEmit` 檢查。
 
 ### D7 — 死檔案
 
@@ -916,7 +929,16 @@ const STYLE_LENS: Record<string, { verbose: string; compact: string }>
 
 `frameSchema` 有 `videoKey` / `videoStatus` / `videoDurationSec` / `videoError`,而 `use-job-store` 也在管任務狀態。兩邊都可能是真相來源。
 
-`frameSchema` 那組是**持久化的結果**(重開瀏覽器要看得到影片),`use-job-store` 是**進行中的任務**(不需持久化)—— 這個分工其實合理,但目前沒有文件說清界線,容易寫成互相覆蓋。至少該在 schema 加註解說明各自職責。與 **N4 渲染追蹤** 相關,做那項時一併釐清。
+**更正**:`use-job-store` **也是 persist 的**(先前本節誤述為「不需持久化」)。它存 `providerJobId`,重開瀏覽器後要靠它繼續輪詢未完成的任務,所以本來就該持久化。
+
+真正的界線是**「結果 vs 任務」**而非「持久 vs 暫時」:
+
+| | 職責 | 持久化 |
+|---|---|---|
+| `frameSchema.video*` | 分鏡的最終結果(哪個 key 有影片、狀態、時長、錯誤) | 是 |
+| `use-job-store` | provider 端任務追蹤(`providerJobId`、輪詢) | 是 |
+
+**實際風險**:`videoStatus` 與 `VideoJob.status` 在 `running` / `succeeded` / `failed` 三個值上重疊,兩邊各自更新就會出現「job 已成功但分鏡還顯示 running」。已在 `frameSchema` 加註解標明,做 **N4 渲染追蹤** 時應進一步收斂為單一來源。
 
 ---
 
@@ -1003,16 +1025,18 @@ const STYLE_LENS: Record<string, { verbose: string; compact: string }>
 
 ### 技術債(D1–D9,詳見 §16)
 
-- [x] ~~D0 三個生圖入口 prompt 本體不一致~~ —— 已於 2026-08-13 修掉並實測逐字相同
-- [ ] **D5** client component 路由守衛 → 直接開專案 URL 必 404,**使用者無法存書籤或分享網址**(影響使用者,建議優先)
-- [ ] **D2** `MODEL_CREDIT_COST` 兩份收斂(併入 N6)
-- [ ] **D1** style/mood 對照表兩份 → 改為單一來源 + `verbose`/`compact` 兩種長度(併入 N3)
-- [ ] **D6** 引入 vitest,測 `zip.ts` / `grid-split.ts` / `timeline-export.ts` / `cast.ts`(**需新增 devDependency,先確認**)
-- [ ] **D8** 統一編輯模式為 debounce 自動存
-- [ ] **D3** `imageBase64Key` 改名為 `hasImage` + `imageVersion`(**破壞性 schema 改動,與 N2 遷移同批做**)
-- [ ] **D4** 圖片狀態納入 store 或改用變更事件,取代 `revalidateKey` 補丁(與 D3 一起)
-- [ ] **D9** 在 schema 加註解釐清 `frameSchema` video 欄位與 `use-job-store` 的職責界線(併入 N4)
-- [ ] **D7** 清理 `actions/frame.ts` 與 `proxy.ts` 空殼(低優先,但 `proxy.ts` 有執行成本)
+**2026-08-13 一輪處理完 D0–D2、D5–D9;D3/D4 刻意延後(理由見下)。**
+
+- [x] ~~**D0** 三個生圖入口 prompt 本體不一致~~ —— 三處統一走 `buildImagePrompt`,實測三者逐字相同(409 字元)
+- [x] ~~**D5** client component 路由守衛 → 直接開專案 URL 必 404~~ —— 新增 `useProjectStoreHydrated()`(`useSyncExternalStore`,非 `useState`+`useEffect`,避免漏事件與 cascading render);兩個頁面在 hydration 完成前顯示 loading。實測:直接開專案 URL 與 prompts 頁皆正常,不存在的專案仍正確 404
+- [x] ~~**D2** `MODEL_CREDIT_COST` 兩份收斂~~ —— 收斂到 `credits.ts`(先前那份從未被 import,真正在用的是 `generate-image.ts` 自己那份)
+- [x] ~~**D1** style/mood 對照表兩份~~ —— 抽出 `src/lib/style-tables.ts` 當唯一來源,`verbose`(單鏡/影片)與 `compact`(宮格)兩種長度。**措辭原樣搬移**,實測 verbose 路徑與重構前逐字相同、compact 路徑未洩漏 verbose 措辭
+- [x] ~~**D6** 純函式模組零測試~~ —— **未引入 vitest**,改用 Node 內建 `node:test` + `--experimental-strip-types`(Node 22.12),**零新增依賴**。16 個測試涵蓋 `zip.ts`(含 CRC32 與 `node:zlib` 權威比對、central directory round-trip、中文檔名、空 zip)與 `timeline-export.ts`(時間軸累加、`videoDurationSec` 優先、SRT 時間碼跨一小時)。`pnpm test` 可跑,tests 也納入 `tsc` 檢查
+- [x] ~~**D8** 統一編輯模式為 debounce 自動存~~ —— `frame-editor` 改自動存。reset 依賴只放 `selectedFrameId`、自動存依賴用序列化字串,兩處都是為了斷開「存→新 frame 物件→reset→再存」的循環。實測:打字產生 1 次寫入、靜置 3 秒 0 次額外寫入
+- [x] ~~**D9** video 欄位與 job store 職責界線~~ —— 已在 `frameSchema` 加註解。**同時更正本文件先前的誤述**(見 §16 D9)
+- [x] ~~**D7** 死檔案~~ —— 已評估:`actions/frame.ts` 確認無人 import,保留當設計備忘;`proxy.ts` 加註解標明它是 no-op 但 matcher 仍有執行成本
+- [ ] **D3** `imageBase64Key` 改名為 `hasImage` + `imageVersion` —— **刻意延後**:這是破壞性 schema 改動需要 persist migrate,單獨做會多遷一次,依 §16 建議與 N2 的資產遷移同批處理
+- [ ] **D4** 圖片狀態納入 store 或改用變更事件,取代 `revalidateKey` 補丁 —— **刻意延後**,與 D3 同批(兩者改的是同一組欄位)
 
 ### 跨項與文件
 
