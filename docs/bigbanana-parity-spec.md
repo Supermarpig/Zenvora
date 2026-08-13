@@ -742,7 +742,8 @@ const allowed = ALLOWED_HOST_SUFFIXES.some(
 ### 11.3 其餘補強
 
 - **URL 長度上限**:避免超長 URL 造成的資源消耗。
-- **逾時**:第 56 行的 `fetch` 沒有 timeout,慢速上游會一直佔住連線。用 `AbortSignal.timeout(ms)`。
+- **逾時**:原本的 `fetch` 沒有 timeout,慢速上游會一直佔住連線。
+  **不可用 `AbortSignal.timeout(ms)`** —— 那會涵蓋整個請求生命週期,而此端點是把 `upstream.body` 直接 streaming 回前端,大檔影片傳到一半就會被中斷。正確做法是 `AbortController` + `setTimeout`,**取得 response 後立刻 `clearTimeout`**,讓逾時只保護「建立連線到收到 headers」這一段。
 - **DNS rebinding**:白名單網域若解析到私網位址仍會被放行。屬進階議題,現階段可只記錄不處理。
 
 **不需要拆成獨立服務** —— 對標對象拆服務是因為它是多容器架構,本專案在 route handler 內補齊即可。
@@ -926,8 +927,8 @@ const STYLE_LENS: Record<string, { verbose: string; compact: string }>
 
 ### 最優先:安全性(不是功能項)
 
-- [ ] 修 `endsWith` 前綴冒充漏洞 —— `evil-googleapis.com` 會通過白名單並取得 `GOOGLE_AI_API_KEY`(§11.2)
-- [ ] 回歸測試:`https://evil-googleapis.com/x` 被拒、`https://storage.googleapis.com/...` 仍通過
+- [x] 修 `endsWith` 前綴冒充漏洞(§11.2)—— 已於 2026-08-13 修掉。抽出 `matchesHost()`,白名單比對與「是否附加 API key」兩處都改用 `=== s || endsWith("." + s)`。**實測舊版共放行 5 個惡意網域**:`evil-googleapis.com`、`notklingai.com`、`xvolces.com`、`evil-kwimgs.com`、`fakebytedance.com`
+- [x] 回歸測試 —— 7 個端點案例全過(冒充網域 / 白名單當前綴 / 非 https / 過長 / 格式錯誤 / 缺參數皆正確拒絕),合法網域仍放行未誤擋
 
 ### N6 模型配置 UI(小 · 無依賴)
 
@@ -997,8 +998,8 @@ const STYLE_LENS: Record<string, { verbose: string; compact: string }>
 
 ### N8 其餘補強(小)
 
-- [ ] URL 長度上限
-- [ ] `fetch` 逾時(`AbortSignal.timeout`)
+- [x] URL 長度上限(`MAX_URI_LENGTH = 2048`)—— 已完成
+- [x] `fetch` 逾時 —— 已完成,**改用 `AbortController` + `clearTimeout` 而非 `AbortSignal.timeout`**(見 §11.3 更正)
 
 ### 技術債(D1–D9,詳見 §16)
 
