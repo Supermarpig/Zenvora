@@ -1,39 +1,7 @@
 import type { Frame, Character } from "./schemas";
+import { STYLE_LENS, MOOD_LIGHTING } from "./style-tables";
 
 type GridSize = 9 | 25;
-
-const MOOD_STYLE: Record<string, string> = {
-  "Warm/Golden Hour":
-    "warm golden hour lighting with soft amber rim light and volumetric rays",
-  "Moody/Dramatic":
-    "dramatic high-contrast lighting with deep shadows and teal-orange color grading",
-  "Bright/Cheerful":
-    "bright cheerful lighting with vibrant saturated colors and soft fill light",
-  "Cold/Blue Tone":
-    "cool blue-toned lighting with desaturated clinical palette",
-  "Neon/Glow":
-    "vivid neon glow with magenta and cyan accents, cyberpunk night aesthetic",
-  "Soft/Dreamy":
-    "soft diffused dreamy lighting with pastel tones and heavy bokeh",
-  "Dark/Horror":
-    "dark horror atmosphere with harsh underlight and desaturated cold palette",
-  "Vintage/Retro":
-    "vintage warm faded tones with 35mm film grain and nostalgic soft-focus",
-};
-
-const LENS_STYLE: Record<string, string> = {
-  Photorealistic: "photorealistic, shot on cinema camera with natural lighting",
-  Cinematic:
-    "cinematic film quality, shot on 35mm anamorphic lens with shallow depth of field and oval bokeh",
-  Anime: "anime-style cel-shaded illustration",
-  Cyberpunk: "cyberpunk Blade Runner aesthetic with neon reflections",
-  Watercolor: "watercolor painting style with soft translucent washes",
-  "Film Noir":
-    "film noir black-and-white with high contrast and venetian blind shadows",
-  Illustration: "polished digital illustration with clean stylized lines",
-  "3D Render":
-    "photorealistic 3D render with ray-traced lighting, Unreal Engine 5 quality",
-};
 
 function buildCharacterBlock(characters: Character[]): string[] {
   if (characters.length === 0) {
@@ -63,8 +31,8 @@ export function buildGridPrompt(
   const styleTag = selected[0].style;
   const moodTag = selected[0].mood;
 
-  const lens = LENS_STYLE[styleTag] ?? styleTag;
-  const mood = MOOD_STYLE[moodTag] ?? moodTag;
+  const lens = STYLE_LENS[styleTag]?.compact ?? styleTag;
+  const mood = MOOD_LIGHTING[moodTag]?.compact ?? moodTag;
 
   if (isSingleScene) {
     const f = selected[0];

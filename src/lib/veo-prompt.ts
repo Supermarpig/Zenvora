@@ -1,4 +1,5 @@
 import type { Frame } from "./schemas";
+import { STYLE_LENS, MOOD_LIGHTING } from "./style-tables";
 
 const SPEAKER_EN: Record<string, string> = {
   空服員: "The flight attendant",
@@ -37,49 +38,12 @@ const CAMERA_DIRECTIONS: Record<string, string> = {
     "Steadicam follow shot trailing the subject from behind, immersive movement",
 };
 
-const MOOD_LIGHTING: Record<string, string> = {
-  "Warm/Golden Hour":
-    "Warm golden hour lighting with soft amber rim light, gentle volumetric rays through windows, anamorphic lens flare",
-  "Moody/Dramatic":
-    "Dramatic high-contrast Rembrandt lighting, deep side shadows with teal-and-orange color grading, strong rim light separation",
-  "Bright/Cheerful":
-    "Bright even fill lighting with vibrant saturated colors, soft key light at 45 degrees, cheerful commercial energy",
-  "Cold/Blue Tone":
-    "Cool blue-toned overhead fluorescent lighting, desaturated clinical palette, isolated cold atmosphere",
-  "Neon/Glow":
-    "Vivid neon glow illumination with magenta and cyan accents reflecting off surfaces, cyberpunk night aesthetic",
-  "Soft/Dreamy":
-    "Soft diffused lighting through sheer curtain, warm pastel tones, heavy foreground bokeh creating dreamy depth",
-  "Dark/Horror":
-    "Harsh underlight casting distorted upward shadows, desaturated cold palette with single red accent, oppressive darkness",
-  "Vintage/Retro":
-    "Vintage warm faded tones with visible 35mm film grain, nostalgic soft-focus edges, tungsten practical light sources",
-};
-
-const STYLE_LENS: Record<string, string> = {
-  Photorealistic:
-    "Shot on ARRI Alexa cinema camera with Zeiss Master Prime lens, natural photorealistic rendering",
-  Cinematic:
-    "Shot on 35mm anamorphic lens with oval bokeh and horizontal flare, cinematic 2.39:1 widescreen aesthetic, shallow depth of field",
-  Anime: "Anime-style cel-shaded illustration with vivid colors and clean lines",
-  Cyberpunk:
-    "Blade Runner neo-noir aesthetic, rain-soaked reflections, holographic UI overlays, shot on anamorphic lens",
-  Watercolor:
-    "Watercolor painting style with soft washes of translucent color, artistic brushstroke texture",
-  "Film Noir":
-    "Classic film noir black-and-white, high-contrast venetian blind shadow patterns, shot on vintage Cooke lens",
-  Illustration:
-    "Polished digital illustration, clean vector-like lines, stylized character proportions",
-  "3D Render":
-    "Photorealistic 3D render, physically-based materials, ray-traced global illumination, Unreal Engine 5 quality",
-};
-
 /**
  * 生圖 prompt（Gemini 單張圖片）：場景 + 鏡頭風格 + 光線氛圍
  */
 export function buildImagePrompt(frame: Frame): string {
-  const lens = STYLE_LENS[frame.style] ?? frame.style;
-  const lighting = MOOD_LIGHTING[frame.mood] ?? frame.mood;
+  const lens = STYLE_LENS[frame.style]?.verbose ?? frame.style;
+  const lighting = MOOD_LIGHTING[frame.mood]?.verbose ?? frame.mood;
 
   return [
     frame.prompt,
@@ -183,8 +147,8 @@ export function buildVeoPrompt(frame: Frame, opts: VeoOptions = {}): string {
 
   sections.push(frame.prompt);
 
-  const lens = STYLE_LENS[frame.style] ?? frame.style;
-  const lighting = MOOD_LIGHTING[frame.mood] ?? frame.mood;
+  const lens = STYLE_LENS[frame.style]?.verbose ?? frame.style;
+  const lighting = MOOD_LIGHTING[frame.mood]?.verbose ?? frame.mood;
   sections.push(`${lens}. ${lighting}.`);
 
   const cam = CAMERA_DIRECTIONS[frame.cameraMovement];
