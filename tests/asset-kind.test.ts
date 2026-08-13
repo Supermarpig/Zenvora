@@ -117,3 +117,32 @@ test("場景與道具的模板可各自覆寫,不互相影響", () => {
     /^Product reference sheet/
   );
 });
+
+test("visualBible 置於角色前綴之後、場景描述之前", async () => {
+  const { composeCastPrompt } = await import("../src/lib/cast.ts");
+  const r = await composeCastPrompt(
+    "a shot in the kitchen",
+    [asset({ name: "小雨" })],
+    ["a-小雨"],
+    "Warm domestic realism, tungsten interiors"
+  );
+  const sections = r.prompt.split("\n\n");
+  assert.equal(sections.length, 3, "應為三段:角色 → 基調 → 畫面");
+  assert.match(sections[0], /hairstyle/, "第一段是角色一致性");
+  assert.equal(sections[1], "Warm domestic realism, tungsten interiors");
+  assert.equal(sections[2], "a shot in the kitchen");
+});
+
+test("沒有 visualBible 時輸出與先前完全相同(不留空段)", async () => {
+  const { composeCastPrompt } = await import("../src/lib/cast.ts");
+  const withUndefined = await composeCastPrompt("a shot", [asset({ name: "小雨" })], ["a-小雨"]);
+  const withBlank = await composeCastPrompt("a shot", [asset({ name: "小雨" })], ["a-小雨"], "   ");
+  assert.equal(withUndefined.prompt.split("\n\n").length, 2);
+  assert.equal(withBlank.prompt, withUndefined.prompt, "全空白應等同未提供");
+});
+
+test("沒有角色但有 visualBible 時,基調仍會注入", async () => {
+  const { composeCastPrompt } = await import("../src/lib/cast.ts");
+  const r = await composeCastPrompt("a shot", [], [], "Cold neon palette");
+  assert.equal(r.prompt, "Cold neon palette\n\na shot");
+});

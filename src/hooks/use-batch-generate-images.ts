@@ -6,6 +6,7 @@ import { saveImage } from "@/lib/db";
 import { composeCastPrompt } from "@/lib/cast";
 import { useModelConfigStore } from "@/stores/use-model-config-store";
 import { usePromptTemplateStore } from "@/stores/use-prompt-template-store";
+import { useProjectStore } from "@/stores/use-project-store";
 import { resolveImageModel } from "@/lib/model-config";
 import { buildImagePrompt } from "@/lib/veo-prompt";
 import { useFrameStore } from "@/stores/use-frame-store";
@@ -41,6 +42,8 @@ export function useBatchGenerateImages(projectId: string) {
       .filter((f) => f.prompt?.trim() && (!onlyMissing || !f.imageBase64Key));
     const allAssets = useCharacterAssetStore.getState().assets;
     const imageTemplate = usePromptTemplateStore.getState().overrides.image;
+    const visualBible = useProjectStore.getState().getProject(projectId)
+      ?.worldview?.visualBible;
     // 未指定時用設定頁選的模型(再退回內建預設)
     const effectiveModel =
       model ?? resolveImageModel(useModelConfigStore.getState().imageModel);
@@ -60,7 +63,8 @@ export function useBatchGenerateImages(projectId: string) {
         const { prompt, referenceImages } = await composeCastPrompt(
           buildImagePrompt(f, imageTemplate),
           allAssets,
-          f.castIds ?? []
+          f.castIds ?? [],
+          visualBible
         );
 
         const res = await generateImage({

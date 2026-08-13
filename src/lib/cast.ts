@@ -110,7 +110,9 @@ export interface ComposedCastPrompt {
 export async function composeCastPrompt(
   rawPrompt: string,
   allAssets: CharacterAsset[],
-  castIds: string[]
+  castIds: string[],
+  /** 全片視覺基調(專案世界觀),置於角色前綴之後、場景描述之前 */
+  visualBible?: string
 ): Promise<ComposedCastPrompt> {
   const ordered = findMentionedAssets(rawPrompt, allAssets);
   for (const asset of allAssets) {
@@ -123,8 +125,14 @@ export async function composeCastPrompt(
     await resolveCast(ordered);
   const body = replaceMentions(rawPrompt, ordered, refIndexByAssetId);
 
+  // 順序:角色一致性 → 全片基調 → 這一鏡的畫面。基調在中間,才不會被
+  // 逐鏡描述蓋掉,也不會壓過角色的參考圖約束。
+  const sections = [promptPrefix, visualBible?.trim(), body].filter(
+    (part): part is string => Boolean(part)
+  );
+
   return {
-    prompt: promptPrefix ? `${promptPrefix}\n\n${body}` : body,
+    prompt: sections.join("\n\n"),
     referenceImages,
     usedAssetIds: ordered.map((a) => a.id),
   };

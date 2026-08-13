@@ -80,6 +80,44 @@ export const PROJECT_TYPE_LABELS: Record<string, string> = {
   reface: "影片換人物",
 };
 
+/**
+ * 世界觀錨定。
+ *
+ * `regions → locations` 是兩層結構而非扁平備註 —— 地點可以綁到 scene 資產,
+ * 讓「世界觀裡的地點」與「可 @ 引用的場景」對上:世界觀負責敘事層的組織,
+ * 場景資產負責視覺一致性。沒有場景資產時 `sceneAssetId` 留空也能用。
+ *
+ * 地圖刻意只存一張參考圖(沿用 IndexedDB),不做互動式地圖編輯器 ——
+ * 那是獨立的大工程,列為非目標。
+ */
+export const worldviewLocationSchema = z.object({
+  id: z.string(),
+  name: z.string().min(1, "地點名稱不可為空"),
+  description: z.string().default(""),
+  /** 對應 kind === "scene" 的資產 id;未建立則為空 */
+  sceneAssetId: z.string().optional(),
+});
+
+export const worldviewRegionSchema = z.object({
+  id: z.string(),
+  name: z.string().min(1, "區域名稱不可為空"),
+  description: z.string().default(""),
+  locations: z.array(worldviewLocationSchema).default([]),
+});
+
+export const worldviewSchema = z.object({
+  /** 時代、地域、世界規則 */
+  setting: z.string().default(""),
+  /** 全片視覺基調,會注入所有生成 prompt */
+  visualBible: z.string().default(""),
+  musicMood: z.string().default(""),
+  regions: z.array(worldviewRegionSchema).default([]),
+});
+
+export type Worldview = z.infer<typeof worldviewSchema>;
+export type WorldviewRegion = z.infer<typeof worldviewRegionSchema>;
+export type WorldviewLocation = z.infer<typeof worldviewLocationSchema>;
+
 export const projectSchema = z.object({
   id: z.string(),
   name: z.string().min(1, "專案名稱不可為空"),
@@ -89,6 +127,7 @@ export const projectSchema = z.object({
   projectType: z.enum(PROJECT_TYPES).optional(),
   /** 選角:此專案引用的人物資產 id */
   characterAssetIds: z.array(z.string()).optional(),
+  worldview: worldviewSchema.optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });

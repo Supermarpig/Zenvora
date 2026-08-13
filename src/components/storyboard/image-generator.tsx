@@ -62,7 +62,8 @@ export function ImageGenerator({ frameId }: ImageGeneratorProps) {
         await composeCastPrompt(
           buildImagePrompt(frame, imageTemplate),
           allAssets,
-          frame.castIds ?? []
+          frame.castIds ?? [],
+          project?.worldview?.visualBible
         );
 
       const result = await generateMutation.mutateAsync({

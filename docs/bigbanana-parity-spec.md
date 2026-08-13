@@ -1059,8 +1059,8 @@ const STYLE_LENS: Record<string, { verbose: string; compact: string }>
 ### N5 專案層級(大)
 
 - [ ] `seasonSchema` / `episodeSchema` / `frameSchema.episodeId`(可選,不改 `projectId`)
-- [ ] `worldview` 結構化:`regions[].locations[].sceneAssetId`(§8.3)
-- [ ] `visualBible` 注入所有生成 prompt
+- [x] ~~`worldview` 結構化~~ —— 2026-08-13 完成。`setting` / `visualBible` / `musicMood` + `regions[].locations[]` 兩層結構,地點可綁 `sceneAssetId` 讓「世界觀裡的地點」與「可 @ 引用的場景資產」對上。地圖依 §8.3 列為非目標
+- [x] ~~`visualBible` 注入所有生成 prompt~~ —— 位置在**角色一致性之後、逐鏡描述之前**:基調在中間才不會被逐鏡描述蓋掉,也不會壓過角色的參考圖約束。三個生圖入口都接上,實測 payload 為四段且基調確實在畫面描述之前;未填或全空白時輸出與先前完全相同(不留空段)
 - [ ] 小說匯入:兩階段確認(先拆集/場,確認後才拆鏡)
 - [ ] 專案 / 全域備份(共用 `snapshotSchema`)
 - [ ] 驗收:現有無季/集專案完全不受影響

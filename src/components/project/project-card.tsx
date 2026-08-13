@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Trash2, Film } from "lucide-react";
+import { Trash2, Film, Globe2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   Card,
@@ -12,11 +12,13 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { WorldviewDialog } from "./worldview-dialog";
 import { useProjectStore } from "@/stores/use-project-store";
 import { useFrameStore } from "@/stores/use-frame-store";
 import type { Project } from "@/lib/schemas";
 
 export function ProjectCard({ project }: { project: Project }) {
+  const [worldviewOpen, setWorldviewOpen] = useState(false);
   const deleteProject = useProjectStore((s) => s.deleteProject);
   const deleteFramesByProject = useFrameStore((s) => s.deleteFramesByProject);
   const allFrames = useFrameStore((s) => s.frames);
@@ -34,7 +36,13 @@ export function ProjectCard({ project }: { project: Project }) {
   }
 
   return (
-    <Link href={`/project/${project.id}`}>
+    <>
+      <WorldviewDialog
+        projectId={project.id}
+        open={worldviewOpen}
+        onOpenChange={setWorldviewOpen}
+      />
+      <Link href={`/project/${project.id}`}>
       <Card className="group transition-shadow hover:shadow-lg">
         <CardHeader>
           <div className="flex items-start justify-between">
@@ -46,14 +54,29 @@ export function ProjectCard({ project }: { project: Project }) {
                 </CardDescription>
               )}
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="opacity-0 transition-opacity group-hover:opacity-100"
-              onClick={handleDelete}
-            >
-              <Trash2 className="h-4 w-4 text-destructive" />
-            </Button>
+            <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+              <Button
+                variant="ghost"
+                size="icon"
+                title="世界觀"
+                onClick={(e) => {
+                  // 卡片整塊是 Link,子按鈕要自己攔下導航
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setWorldviewOpen(true);
+                }}
+              >
+                <Globe2 className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                title="刪除專案"
+                onClick={handleDelete}
+              >
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardFooter className="text-sm text-muted-foreground">
@@ -64,6 +87,7 @@ export function ProjectCard({ project }: { project: Project }) {
           </span>
         </CardFooter>
       </Card>
-    </Link>
+      </Link>
+    </>
   );
 }

@@ -31,7 +31,7 @@ Next.js 16 + React 19 + Zustand + shadcn/ui。**純前端,無後端資料庫** �
 pnpm install               # node_modules 可能不存在
 npx tsc --noEmit           # 必須全綠(含 tests/)
 npx eslint src/ tests/     # 不可新增 error/warning
-pnpm test                  # 73 個單元測試,必須全過
+pnpm test                  # 76 個單元測試,必須全過
 ```
 
 測試用 Node 內建 `node:test` + `--experimental-strip-types`(需 Node 22+),**沒有裝 vitest 或任何測試框架**。目前涵蓋 `zip.ts`、`timeline-export.ts`、`plan-review.ts`、`mention.ts`、`storyboard-prompt.ts`(宮格排版)、`prompt-template.ts`。`grid-split.ts` 需要 canvas 所以測不到。

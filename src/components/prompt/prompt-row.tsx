@@ -133,7 +133,12 @@ export function PromptRow({ frame }: { frame: Frame }) {
     try {
       // 帶入角色:prompt 裡的 @引用 ∪ 手動選角(與分鏡編輯器、批次生圖行為一致)
       const { prompt: composedPrompt, referenceImages } =
-        await composeCastPrompt(imagePrompt, allAssets, frame.castIds ?? []);
+        await composeCastPrompt(
+          imagePrompt,
+          allAssets,
+          frame.castIds ?? [],
+          project?.worldview?.visualBible
+        );
 
       const result = await generateMutation.mutateAsync({
         prompt: composedPrompt,
