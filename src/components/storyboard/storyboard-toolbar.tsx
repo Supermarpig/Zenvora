@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { CharacterManager } from "./character-manager";
 import { StoryboardGenerator } from "./storyboard-generator";
 import { BatchImageButton } from "./batch-image-button";
+import { ExportTimelineButton } from "./export-timeline-button";
 import { useProjectStore } from "@/stores/use-project-store";
 import { useFrameStore } from "@/stores/use-frame-store";
 import { seedProject, seedFrames } from "@/lib/seed-data";
@@ -61,6 +62,10 @@ export function StoryboardToolbar({
         )}
         <StoryboardGenerator projectId={projectId} />
         <BatchImageButton projectId={projectId} />
+        <ExportTimelineButton
+          projectId={projectId}
+          projectName={projectName}
+        />
         <Button variant="outline" size="sm" onClick={onAddFrame}>
           <Plus className="mr-1.5 h-4 w-4" />
           新增分鏡
