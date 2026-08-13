@@ -6,6 +6,9 @@
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
+    // tests/ 用 node --experimental-strip-types 執行,Node 的 ESM 解析要求
+    // import 路徑帶 .ts 副檔名;開這個選項讓 tsc 也接受,測試才能一起被型別檢查
+    "allowImportingTsExtensions": true,
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",
