@@ -17,7 +17,7 @@ export default function CharactersPage() {
           </Button>
           <div className="flex items-center gap-2">
             <UsersRound className="h-5 w-5" />
-            <h1 className="text-xl font-bold">人物資產</h1>
+            <h1 className="text-xl font-bold">資產庫</h1>
           </div>
         </div>
       </header>

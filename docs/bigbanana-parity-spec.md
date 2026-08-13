@@ -989,13 +989,18 @@ const STYLE_LENS: Record<string, { verbose: string; compact: string }>
 
 ### N2 資產庫泛化(中)
 
-- [ ] `ASSET_KINDS` + `assetSchema`(kind / characterType / ownerAssetId)
-- [ ] persist `version: 1` + `migrate`(注意 `partialize` 只給 `assets`)
-- [ ] 一致性指示句依 kind 分組(場景講 layout/lighting,不講 hairstyle)
-- [ ] `character-sheet-prompt` 依 kind 分歧(場景生 establishing shots、道具生白底多角度)
-- [ ] 資產庫 UI kind 分頁 / 篩選
-- [ ] `findMissingMentions()` + 批量補齊缺失資產(§5.6)
-- [ ] 驗收:v0 舊資料遷移零損失
+**2026-08-13 完成核心;批量補齊與 costume 歸屬 UI 未做。**
+
+- [x] ~~`ASSET_KINDS` + kind 維度~~ —— **保留 `characterAssetSchema` 的名稱**而非改名成 `assetSchema`,避免為了語意漂亮而大規模重構(`CharacterAsset` 型別散在十幾個檔案)。新增 `kind` / `ownerAssetId`,`type`(actor/presenter/reface)保持原意並在註解標明只在 `kind === "character"` 時有效
+- [x] ~~persist `version: 1` + `migrate`~~ —— **實測 v0 資料遷移零損失**:`version` 0→1、補上 `kind: "character"`、`appearance` / `referenceImageKeys` / `tags` / `type` 全部保留
+- [x] ~~一致性指示句依 kind 分組~~ —— 四種 kind 各有自己的句式,並且**多種類混用時分成多句**而非全部塞進一句。對場景說 `identical face, hairstyle` 是純雜訊,會稀釋 prompt
+- [x] ~~參考圖依 kind 分歧~~ —— 新增 `scene-sheet`(多視角 establishing shots,**不是** turnaround —— 對一個房間說「轉一圈」沒有意義)與 `prop-sheet`(白底多角度產品圖,道具與服裝共用)。這兩個模板也一併納入 N3 的可編輯清單
+- [x] ~~資產庫 UI~~ —— kind 選擇、依 kind 篩選(附數量)、卡片徽章;選非人物時「角色類型」欄位自動隱藏。使用者可見的「人物資產」字樣一併改為「資產庫」
+- [x] ~~`findMissingMentions()`~~ —— 已於 N7 實作
+- [ ] **批量補齊缺失資產未做** —— 掃出缺失(已有)之後的「一鍵建立 + 批次生成參考圖」還沒接。生成參考圖需要 API 額度,無法在目前狀態下驗證產出
+- [ ] **`ownerAssetId` 只有 schema,沒有 UI** —— 服裝歸屬哪個人物尚未能在介面設定。要用到它的情境(換裝)屬更後面的功能
+
+驗收另有 11 個單元測試涵蓋分組出句與各 kind 的參考圖句式。
 
 ### N7 全自動計畫預審(小 · 弱依賴 N2)
 

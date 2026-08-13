@@ -24,7 +24,7 @@ export default function HomePage() {
             <Button variant="outline" asChild>
               <Link href="/characters">
                 <UsersRound className="mr-1.5 h-4 w-4" />
-                人物資產
+                資產庫
               </Link>
             </Button>
             <PromptTemplateDialog />

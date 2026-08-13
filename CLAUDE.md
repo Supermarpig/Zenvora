@@ -31,7 +31,7 @@ Next.js 16 + React 19 + Zustand + shadcn/ui。**純前端,無後端資料庫** �
 pnpm install               # node_modules 可能不存在
 npx tsc --noEmit           # 必須全綠(含 tests/)
 npx eslint src/ tests/     # 不可新增 error/warning
-pnpm test                  # 51 個單元測試,必須全過
+pnpm test                  # 62 個單元測試,必須全過
 ```
 
 測試用 Node 內建 `node:test` + `--experimental-strip-types`(需 Node 22+),**沒有裝 vitest 或任何測試框架**。目前涵蓋 `zip.ts`、`timeline-export.ts`、`plan-review.ts`、`mention.ts`、`storyboard-prompt.ts`(宮格排版)、`prompt-template.ts`。`grid-split.ts` 需要 canvas 所以測不到。
@@ -51,7 +51,7 @@ dev server 用 `preview_start` 的 `frameforge-dev`(`.claude/launch.json`,port 3
 
 沒有 seed 指令,驗證功能時自行注入:
 
-- localStorage key:`frameforge-projects`、`frameforge-frames`、`frameforge-character-assets`,格式為 `{ state: {...}, version: 0 }`
+- localStorage key:`frameforge-projects`、`frameforge-frames`、`frameforge-character-assets`(**version 1**,v0 資料會被 migrate 補上 `kind`)、`frameforge-model-config`、`frameforge-prompt-templates`
 - IndexedDB:`keyval-store` / `keyval`,key 為 `image-{frameId}`、`video-{frameId}`、`asset-{assetId}-{n}`
 
 **兩個踩過的坑**:
@@ -73,6 +73,7 @@ dev server 用 `preview_start` 的 `frameforge-dev`(`.claude/launch.json`,port 3
 
 - `imageBase64Key` 全專案只當「有沒有圖」的 truthy 標記,實際載入一律走 `loadImage(frame.id)`。九宮格切圖會在它後面加 `#{timestamp}` 當版本號觸發 revalidate。(這個命名問題是已知技術債 D3,待與資產遷移同批修。)
 - `useImageStorage(frameId, revalidateKey)` 的第二參數:外部直接寫 IndexedDB 時要傳會變動的值,否則畫面停在舊狀態。(技術債 D4。)
+- **資產有 `kind` 與 `type` 兩個維度**:`kind` 是種類(character / scene / prop / costume),`type` 是角色子類(actor / presenter / reface)且只在 `kind === "character"` 時有意義。一致性指示句與參考圖 prompt 都依 `kind` 分歧 —— 對場景說「identical hairstyle」是雜訊,對房間生 turnaround 沒有意義。
 - **`src/lib/style-tables.ts` 是 style/mood 鏡頭語言的唯一來源**,`verbose` 給單鏡與影片、`compact` 給宮格。措辭改動會讓既有專案重生的圖跟舊圖不一致,別隨手改。
 - `frame-editor` 與 `prompt-row` 都是 **debounce 自動存**。`frame-editor` 的兩個 effect 依賴刻意避開 `frame` 物件(用 `selectedFrameId` 與序列化字串),否則會形成「存→新物件→reset→再存」的循環。
 - `frameSchema` 的 `video*` 欄位是**結果**,`use-job-store` 是**任務**,兩者都 persist。`videoStatus` 與 `VideoJob.status` 有值域重疊,更新時要同步兩邊。

@@ -1,5 +1,5 @@
 import { loadAssetImage } from "./db";
-import type { CharacterAsset } from "./schemas";
+import type { AssetKind, CharacterAsset } from "./schemas";
 import { findMentionedAssets, replaceMentions } from "./mention";
 
 // 這些純函式已搬到 mention.ts(為了可測試),從這裡 re-export 維持既有 import 路徑
@@ -8,6 +8,51 @@ export {
   replaceMentions,
   findMissingMentions,
 } from "./mention";
+
+/**
+ * 一致性指示句依資產種類分開寫。
+ *
+ * 對場景說「identical face, hairstyle」是純雜訊 —— 模型要被告知的是這個
+ * 空間的佈局與光線該保持一致,而不是它的髮型。
+ */
+const CONSISTENCY_DIRECTIVE: Record<AssetKind, string> = {
+  character:
+    "Keep these characters visually consistent — identical face, hairstyle, body proportions, and outfit.",
+  scene:
+    "Keep these locations visually consistent — identical layout, architecture, furniture placement, and lighting setup.",
+  prop:
+    "Keep these props visually consistent — identical shape, material, colour, and scale.",
+  costume:
+    "Keep these outfits visually consistent — identical garment cut, fabric, colour, and how it drapes.",
+};
+
+/** 依 kind 分組出句;跨 kind 的參考圖編號仍是單一序列(參考圖陣列只有一條) */
+function buildConsistencyLines(
+  withRefs: { asset: CharacterAsset; index: number }[],
+  textOnly: CharacterAsset[]
+): string[] {
+  const byKind = new Map<AssetKind, string[]>();
+
+  const push = (kind: AssetKind, line: string) => {
+    const existing = byKind.get(kind);
+    if (existing) existing.push(line);
+    else byKind.set(kind, [line]);
+  };
+
+  for (const { asset, index } of withRefs) {
+    push(
+      asset.kind ?? "character",
+      `Reference image ${index} is "${asset.name}": ${asset.appearance}.`
+    );
+  }
+  for (const asset of textOnly) {
+    push(asset.kind ?? "character", `"${asset.name}": ${asset.appearance}.`);
+  }
+
+  return [...byKind.entries()].map(
+    ([kind, lines]) => `${CONSISTENCY_DIRECTIVE[kind]} ${lines.join(" ")}`
+  );
+}
 
 export interface ResolvedCast {
   /** 要接在場景描述前面的角色一致性指示 */
@@ -35,21 +80,13 @@ export async function resolveCast(
     else textOnly.push(asset);
   }
 
-  const lines: string[] = [];
   const refIndexByAssetId: Record<string, number> = {};
-  withRefs.forEach((w, i) => {
+  const indexed = withRefs.map((w, i) => {
     refIndexByAssetId[w.asset.id] = i + 1;
-    lines.push(`Reference image ${i + 1} is "${w.asset.name}": ${w.asset.appearance}.`);
-  });
-  textOnly.forEach((a) => {
-    lines.push(`"${a.name}": ${a.appearance}.`);
+    return { asset: w.asset, index: i + 1 };
   });
 
-  const promptPrefix = lines.length
-    ? `Keep these characters visually consistent — identical face, hairstyle, body proportions, and outfit. ${lines.join(
-        " "
-      )}`
-    : "";
+  const promptPrefix = buildConsistencyLines(indexed, textOnly).join("\n");
 
   return {
     promptPrefix,

@@ -23,12 +23,15 @@ export function useGenerateCharacterSheet() {
   return useMutation({
     mutationFn: async ({ assetId, model }: GenerateSheetArgs) => {
       const asset = getAsset(assetId);
-      if (!asset) throw new Error("找不到人物資產");
+      if (!asset) throw new Error("找不到資產");
+      const { overrides } = usePromptTemplateStore.getState();
 
       const result = await generateImage({
         prompt: buildCharacterSheetPrompt(asset, {
-          characterSheet: usePromptTemplateStore.getState().overrides["character-sheet"],
-          presenterSheet: usePromptTemplateStore.getState().overrides["presenter-sheet"],
+          characterSheet: overrides["character-sheet"],
+          presenterSheet: overrides["presenter-sheet"],
+          sceneSheet: overrides["scene-sheet"],
+          propSheet: overrides["prop-sheet"],
         }),
         model:
           model ??

@@ -40,8 +40,11 @@ import {
 import {
   CHARACTER_ASSET_TYPES,
   CHARACTER_ASSET_TYPE_LABELS,
+  ASSET_KINDS,
+  ASSET_KIND_LABELS,
   type CharacterAsset,
   type CharacterAssetType,
+  type AssetKind,
 } from "@/lib/schemas";
 
 const TYPE_BADGE: Record<string, string> = {
@@ -71,39 +74,71 @@ export function CharacterLibrary() {
   const assets = useCharacterAssetStore((s) => s.assets);
   const [editing, setEditing] = useState<CharacterAsset | null>(null);
   const [creating, setCreating] = useState(false);
+  const [kindFilter, setKindFilter] = useState<AssetKind | "all">("all");
+
+  // 舊資料可能沒有 kind,視為人物
+  const kindOf = (a: CharacterAsset): AssetKind => a.kind ?? "character";
+  const counts = assets.reduce<Record<string, number>>((acc, a) => {
+    acc[kindOf(a)] = (acc[kindOf(a)] ?? 0) + 1;
+    return acc;
+  }, {});
+  const visible =
+    kindFilter === "all" ? assets : assets.filter((a) => kindOf(a) === kindFilter);
 
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold">人物資產庫</h2>
+          <h2 className="text-lg font-semibold">資產庫</h2>
           <p className="text-sm text-muted-foreground">
-            可跨專案重用的 AI 角色 · 外觀 + 參考圖，生圖／生影片時自動帶入保持一致
+            可跨專案重用的人物、場景、道具與服裝 · 外觀 + 參考圖，生圖／生影片時自動帶入保持一致
           </p>
         </div>
         <Button onClick={() => setCreating(true)}>
           <Plus className="mr-1.5 h-4 w-4" />
-          新增角色
+          新增資產
         </Button>
       </div>
+
+      {assets.length > 0 && (
+        <div className="mb-4 flex flex-wrap gap-1.5">
+          <Button
+            variant={kindFilter === "all" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setKindFilter("all")}
+          >
+            全部（{assets.length}）
+          </Button>
+          {ASSET_KINDS.filter((k) => counts[k]).map((k) => (
+            <Button
+              key={k}
+              variant={kindFilter === k ? "default" : "outline"}
+              size="sm"
+              onClick={() => setKindFilter(k)}
+            >
+              {ASSET_KIND_LABELS[k]}（{counts[k]}）
+            </Button>
+          ))}
+        </div>
+      )}
 
       {assets.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed py-24 text-center">
           <UserRound className="h-14 w-14 text-muted-foreground/40" />
           <div>
-            <p className="font-medium">還沒有任何人物資產</p>
+            <p className="font-medium">還沒有任何資產</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              建立一個角色，填外觀後一鍵生成參考圖
+              建立人物、場景或道具，填外觀後一鍵生成參考圖
             </p>
           </div>
           <Button variant="outline" onClick={() => setCreating(true)}>
             <Plus className="mr-1.5 h-4 w-4" />
-            建立第一個角色
+            建立第一個資產
           </Button>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {assets.map((asset) => (
+          {visible.map((asset) => (
             <AssetCard
               key={asset.id}
               asset={asset}
@@ -172,12 +207,17 @@ function AssetCard({
             <span className="text-xs">點擊生成設定圖</span>
           </button>
         )}
+        {/* 人物顯示角色子類(漫劇角色/數字人/換臉),其餘種類直接顯示種類 */}
         <span
           className={`absolute left-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-medium ${
-            TYPE_BADGE[asset.type] ?? "bg-muted text-muted-foreground"
+            (asset.kind ?? "character") === "character"
+              ? TYPE_BADGE[asset.type] ?? "bg-muted text-muted-foreground"
+              : "bg-foreground/80 text-background"
           }`}
         >
-          {CHARACTER_ASSET_TYPE_LABELS[asset.type] ?? asset.type}
+          {(asset.kind ?? "character") === "character"
+            ? CHARACTER_ASSET_TYPE_LABELS[asset.type] ?? asset.type
+            : ASSET_KIND_LABELS[asset.kind]}
         </span>
       </div>
 
@@ -269,6 +309,7 @@ function AssetEditorBody({
 
   // 初值來自 props;child 以 key 重掛,切換角色自動重新初始化,不需 effect
   const [name, setName] = useState(asset?.name ?? "");
+  const [kind, setKind] = useState<AssetKind>(asset?.kind ?? "character");
   const [type, setType] = useState<CharacterAssetType>(asset?.type ?? "actor");
   const [appearance, setAppearance] = useState(asset?.appearance ?? "");
 
@@ -288,12 +329,13 @@ function AssetEditorBody({
     if (isEdit && asset) {
       updateAsset(asset.id, {
         name: name.trim(),
+        kind,
         type,
         appearance: appearance.trim(),
       });
-      toast.success("已更新角色");
+      toast.success("已更新資產");
     } else {
-      addAsset({ name: name.trim(), type, appearance: appearance.trim() });
+      addAsset({ name: name.trim(), kind, type, appearance: appearance.trim() });
       toast.success(`已建立「${name.trim()}」`);
     }
     onClose();
@@ -307,6 +349,7 @@ function AssetEditorBody({
     // 先把當前編輯內容存起來,設定圖才會依最新外觀生成
     updateAsset(asset.id, {
       name: name.trim(),
+      kind,
       type,
       appearance: appearance.trim(),
     });
@@ -360,32 +403,51 @@ function AssetEditorBody({
 
       <div className="space-y-4">
           <div className="space-y-1.5">
-            <Label className="text-xs">角色名稱</Label>
+            <Label className="text-xs">名稱</Label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="例如：小雲雀"
+              placeholder="例如：小雲雀、老家廚房、銀托盤"
             />
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs">類型</Label>
-            <Select
-              value={type}
-              onValueChange={(v) => setType(v as CharacterAssetType)}
-            >
+            <Label className="text-xs">資產種類</Label>
+            <Select value={kind} onValueChange={(v) => setKind(v as AssetKind)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {CHARACTER_ASSET_TYPES.map((t) => (
-                  <SelectItem key={t} value={t}>
-                    {CHARACTER_ASSET_TYPE_LABELS[t]}
+                {ASSET_KINDS.map((k) => (
+                  <SelectItem key={k} value={k}>
+                    {ASSET_KIND_LABELS[k]}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
+
+          {/* 角色子類只在人物時有意義,其餘種類藏起來避免誤導 */}
+          {kind === "character" && (
+            <div className="space-y-1.5">
+              <Label className="text-xs">角色類型</Label>
+              <Select
+                value={type}
+                onValueChange={(v) => setType(v as CharacterAssetType)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CHARACTER_ASSET_TYPES.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {CHARACTER_ASSET_TYPE_LABELS[t]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <Label className="text-xs">外觀描述</Label>

@@ -176,7 +176,7 @@ export function FrameEditor() {
                         <FormLabel>場景描述</FormLabel>
                         <FormControl>
                           <Textarea
-                            placeholder="描述這個場景的畫面...（可用 @角色名 引用上方的人物資產）"
+                            placeholder="描述這個場景的畫面...（可用 @名稱 引用資產庫的人物或場景）"
                             rows={8}
                             {...field}
                           />

@@ -52,7 +52,7 @@ export function StoryboardToolbar({
         <Button variant="outline" size="sm" asChild>
           <Link href="/characters">
             <UsersRound className="mr-1.5 h-4 w-4" />
-            人物資產
+            資產庫
           </Link>
         </Button>
         <CharacterManager projectId={projectId} />

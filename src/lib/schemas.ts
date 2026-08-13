@@ -18,11 +18,31 @@ export const CHARACTER_ASSET_TYPE_LABELS: Record<string, string> = {
   reface: "換臉目標",
 };
 
+/**
+ * 資產種類。與 `type`(actor / presenter / reface)是**兩個不同維度** ——
+ * `type` 是角色的子類,只在 kind === "character" 時有意義。把 scene / prop
+ * 硬塞進 `type` 會讓「數字人主播的場景」這種組合無法表達。
+ */
+export const ASSET_KINDS = ["character", "scene", "prop", "costume"] as const;
+
+export type AssetKind = (typeof ASSET_KINDS)[number];
+
+export const ASSET_KIND_LABELS: Record<AssetKind, string> = {
+  character: "人物",
+  scene: "場景",
+  prop: "道具",
+  costume: "服裝",
+};
+
 export const characterAssetSchema = z.object({
   id: z.string(),
-  name: z.string().min(1, "角色名稱不可為空"),
+  name: z.string().min(1, "名稱不可為空"),
+  /** 舊資料沒有這個欄位,預設 character(見 store 的 migrate) */
+  kind: z.enum(ASSET_KINDS).default("character"),
   type: z.enum(CHARACTER_ASSET_TYPES).default("actor"),
-  appearance: z.string().min(1, "請描述角色外觀"),
+  /** 僅 kind === "costume" 時有意義:這套服裝屬於哪個人物資產 */
+  ownerAssetId: z.string().optional(),
+  appearance: z.string().min(1, "請描述外觀"),
   /** 多角度參考圖，存於 IndexedDB，key 形如 asset-{id}-{n} */
   referenceImageKeys: z.array(z.string()).default([]),
   voice: z
@@ -41,9 +61,11 @@ export type CharacterAsset = z.infer<typeof characterAssetSchema>;
 export type CharacterAssetType = (typeof CHARACTER_ASSET_TYPES)[number];
 
 export const createCharacterAssetSchema = z.object({
-  name: z.string().min(1, "角色名稱不可為空"),
+  name: z.string().min(1, "名稱不可為空"),
+  kind: z.enum(ASSET_KINDS).default("character"),
   type: z.enum(CHARACTER_ASSET_TYPES).default("actor"),
-  appearance: z.string().min(1, "請描述角色外觀"),
+  ownerAssetId: z.string().optional(),
+  appearance: z.string().min(1, "請描述外觀"),
 });
 
 export type CreateCharacterAssetInput = z.infer<

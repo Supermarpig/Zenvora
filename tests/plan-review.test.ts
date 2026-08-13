@@ -30,6 +30,7 @@ function asset(name: string): CharacterAsset {
   return {
     id: "a-" + name,
     name,
+    kind: "character",
     type: "actor",
     appearance: "some appearance",
     referenceImageKeys: [],

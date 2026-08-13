@@ -201,7 +201,7 @@ export function reviewPlan(
       severity: "blocker",
       category: "missing-asset",
       message: `prompt 裡引用了不存在的角色:${missing.join("、")}`,
-      suggestion: "去人物資產建立它們,否則 @ 引用不會帶入參考圖,只會被當普通文字",
+      suggestion: "去資產庫建立它們,否則 @ 引用不會帶入參考圖,只會被當普通文字",
     });
   }
 

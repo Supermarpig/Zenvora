@@ -13,6 +13,8 @@ export const PROMPT_TEMPLATE_IDS = [
   "image",
   "character-sheet",
   "presenter-sheet",
+  "scene-sheet",
+  "prop-sheet",
 ] as const;
 
 export type PromptTemplateId = (typeof PROMPT_TEMPLATE_IDS)[number];
@@ -53,6 +55,33 @@ export const TEMPLATE_META: Record<PromptTemplateId, TemplateMeta> = {
       "Show the SAME character in three views side by side on a clean neutral light-gray studio background: front view, 3/4 view, and side profile. Full body, standing in a relaxed neutral pose.",
       "Keep the face, hairstyle, body proportions, and outfit IDENTICAL across all three views. Even soft studio lighting, no harsh shadows.",
       "Do not include any text, labels, watermarks, measurement lines, grids, or color swatches. Pure clean character turnaround only.",
+    ].join("\n"),
+  },
+  "scene-sheet": {
+    id: "scene-sheet",
+    label: "場景參考圖",
+    description:
+      "資產種類為「場景」時使用。刻意不生 turnaround —— 空間要的是多視角 establishing shots,不是「轉一圈」。",
+    variables: ["appearance"],
+    builtIn: [
+      "Location reference sheet of ONE single consistent place.",
+      "Location: {{appearance}}.",
+      "Show the SAME location from three different angles side by side: a wide establishing shot, a medium shot from another corner, and a detail shot of a defining feature. Keep the layout, architecture, furniture placement, materials, and lighting setup IDENTICAL across all three.",
+      "No people in frame. Even natural lighting that reveals the space clearly.",
+      "Do not include any text, labels, watermarks, floor plans, or measurement lines. Pure clean location reference only.",
+    ].join("\n"),
+  },
+  "prop-sheet": {
+    id: "prop-sheet",
+    label: "道具 / 服裝參考圖",
+    description: "資產種類為「道具」或「服裝」時使用,白底多角度產品圖。",
+    variables: ["appearance"],
+    builtIn: [
+      "Product reference sheet of ONE single consistent object.",
+      "Object: {{appearance}}.",
+      "Show the SAME object from three angles side by side on a clean pure white background: front view, 3/4 view, and a close detail of its material or texture. Keep the shape, proportions, colour, and material IDENTICAL across all three.",
+      "Even soft studio lighting, no harsh shadows, no hands or extra props in frame.",
+      "Do not include any text, labels, watermarks, or measurement lines. Pure clean product reference only.",
     ].join("\n"),
   },
   "presenter-sheet": {

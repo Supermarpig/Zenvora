@@ -38,7 +38,9 @@ export const useCharacterAssetStore = create<CharacterAssetState>()(
         const asset: CharacterAsset = {
           id: crypto.randomUUID(),
           name: input.name,
+          kind: input.kind ?? "character",
           type: input.type ?? "actor",
+          ownerAssetId: input.ownerAssetId,
           appearance: input.appearance,
           referenceImageKeys: [],
           tags: [],
@@ -85,6 +87,25 @@ export const useCharacterAssetStore = create<CharacterAssetState>()(
     {
       name: "frameforge-character-assets",
       partialize: (state) => ({ assets: state.assets }),
+      version: 1,
+      /**
+       * v0 的每一筆都是人物資產(當時還沒有 kind 這個維度),補上 kind。
+       *
+       * 注意 partialize 只存 assets,所以這裡收到的 state 只有那一個欄位,
+       * 不要去碰其他東西。persist 的 name 也刻意不改 —— 改了等於使用者資料消失。
+       */
+      migrate: (persisted, version) => {
+        const state = persisted as { assets?: CharacterAsset[] };
+        if (version === 0 && Array.isArray(state?.assets)) {
+          return {
+            assets: state.assets.map((a) => ({
+              ...a,
+              kind: a.kind ?? ("character" as const),
+            })),
+          };
+        }
+        return state;
+      },
     }
   )
 );

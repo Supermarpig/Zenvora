@@ -41,7 +41,7 @@ export function CastPicker({ frameId }: CastPickerProps) {
           href="/characters"
           className="block rounded-lg border border-dashed p-2.5 text-center text-[11px] text-muted-foreground hover:bg-muted/50"
         >
-          尚無人物資產 — 前往「人物資產」建立可重用角色
+          尚無資產 — 前往「資產庫」建立可重用的人物與場景
         </Link>
       ) : (
         <div className="flex flex-wrap gap-1.5">
