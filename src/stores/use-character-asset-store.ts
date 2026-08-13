@@ -17,6 +17,8 @@ interface CharacterAssetState {
   deleteAsset: (id: string) => void;
 
   setReferenceImages: (id: string, keys: string[]) => void;
+  /** 備份還原用:同 id 覆蓋,不在清單內的既有資產保留不刪 */
+  upsertAssets: (incoming: CharacterAsset[]) => void;
 }
 
 export const useCharacterAssetStore = create<CharacterAssetState>()(
@@ -31,6 +33,15 @@ export const useCharacterAssetStore = create<CharacterAssetState>()(
         return ids
           .map((id) => map.get(id))
           .filter((a): a is CharacterAsset => !!a);
+      },
+
+      upsertAssets: (incoming) => {
+        if (incoming.length === 0) return;
+        set((state) => {
+          const byId = new Map(state.assets.map((a) => [a.id, a]));
+          incoming.forEach((a) => byId.set(a.id, a));
+          return { assets: [...byId.values()] };
+        });
       },
 
       addAsset: (input) => {

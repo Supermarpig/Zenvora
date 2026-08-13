@@ -64,3 +64,19 @@ export async function loadAssetImage(
 export async function deleteAssetImage(key: string): Promise<void> {
   await del(key);
 }
+
+// --- 備份還原 ---
+
+/**
+ * 依原始 key 直接寫回 IndexedDB。
+ *
+ * 備份的 key 涵蓋 image- / video- / asset- 三種前綴,由 manifest 決定,
+ * 所以不走各自的 save 函式。集中在這裡是為了讓所有 IndexedDB 存取仍只有
+ * 這一個檔案碰得到。
+ */
+export async function restoreRawValue(
+  key: string,
+  value: string | Blob
+): Promise<void> {
+  await set(key, value);
+}

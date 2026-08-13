@@ -117,3 +117,75 @@ export function createZip(entries: ZipEntry[]): Blob {
     type: "application/zip",
   });
 }
+
+// --- 讀取 ---
+
+const EOCD_MIN_SIZE = 22;
+/** EOCD 可能帶 comment,要從尾端往前找 signature */
+const MAX_EOCD_SEARCH = EOCD_MIN_SIZE + 0xffff;
+
+/**
+ * 解析 store 模式的 ZIP。
+ *
+ * 刻意只支援 compression method 0 —— 本專案產生的備份一律是 store 模式
+ * (內容多為已壓縮的 mp4/png)。遇到 deflate 就明確報錯,而不是回傳壞資料
+ * 讓使用者以為匯入成功。
+ */
+export async function readZip(blob: Blob): Promise<ZipEntry[]> {
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  if (bytes.length < EOCD_MIN_SIZE) throw new Error("檔案太小,不是合法的 zip");
+
+  const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+
+  let eocd = -1;
+  const searchFrom = Math.max(0, bytes.length - MAX_EOCD_SEARCH);
+  for (let i = bytes.length - EOCD_MIN_SIZE; i >= searchFrom; i--) {
+    if (dv.getUint32(i, true) === 0x06054b50) {
+      eocd = i;
+      break;
+    }
+  }
+  if (eocd < 0) throw new Error("找不到 zip 結構(EOCD),檔案可能損毀");
+
+  const count = dv.getUint16(eocd + 10, true);
+  let cursor = dv.getUint32(eocd + 16, true);
+
+  const decoder = new TextDecoder();
+  const entries: ZipEntry[] = [];
+
+  for (let i = 0; i < count; i++) {
+    if (dv.getUint32(cursor, true) !== 0x02014b50) {
+      throw new Error("zip central directory 結構異常");
+    }
+    const method = dv.getUint16(cursor + 10, true);
+    const size = dv.getUint32(cursor + 24, true);
+    const nameLen = dv.getUint16(cursor + 28, true);
+    const extraLen = dv.getUint16(cursor + 30, true);
+    const commentLen = dv.getUint16(cursor + 32, true);
+    const localOffset = dv.getUint32(cursor + 42, true);
+    const name = decoder.decode(
+      bytes.subarray(cursor + 46, cursor + 46 + nameLen)
+    );
+
+    if (method !== 0) {
+      throw new Error(`${name} 使用了壓縮(method ${method}),此匯入只支援未壓縮的備份`);
+    }
+
+    // local header 的檔名長度可能與 central 不同,要各自讀
+    const localNameLen = dv.getUint16(localOffset + 26, true);
+    const localExtraLen = dv.getUint16(localOffset + 28, true);
+    const dataStart = localOffset + 30 + localNameLen + localExtraLen;
+    if (dataStart + size > bytes.length) {
+      throw new Error(`${name} 的資料超出檔案範圍`);
+    }
+
+    entries.push({
+      name,
+      data: bytes.slice(dataStart, dataStart + size) as Uint8Array<ArrayBuffer>,
+    });
+
+    cursor += 46 + nameLen + extraLen + commentLen;
+  }
+
+  return entries;
+}

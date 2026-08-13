@@ -121,3 +121,33 @@ test("空清單也產生合法(空的)zip", async () => {
   assert.equal(dv.getUint32(0, true), EOCD_SIG);
   assert.equal(dv.getUint16(10, true), 0, "0 個項目");
 });
+
+test("readZip 能讀回 createZip 產生的內容(含中文檔名與二進位)", async () => {
+  const { readZip } = await import("../src/lib/zip.ts");
+  const files = [
+    { name: "snapshot.json", data: enc('{"version":1}') },
+    { name: "media/使用說明.txt", data: enc("中文內容") },
+    { name: "media/001.mp4", data: new Uint8Array([0, 0, 0, 24, 102, 116, 121, 112]) as Uint8Array<ArrayBuffer> },
+  ];
+  const entries = await readZip(createZip(files));
+
+  assert.equal(entries.length, files.length);
+  for (const f of files) {
+    const got = entries.find((e) => e.name === f.name);
+    assert.ok(got, `應讀回 ${f.name}`);
+    assert.deepEqual(Array.from(got!.data), Array.from(f.data));
+  }
+});
+
+test("readZip 對空 zip 回空陣列", async () => {
+  const { readZip } = await import("../src/lib/zip.ts");
+  assert.deepEqual(await readZip(createZip([])), []);
+});
+
+test("readZip 對非 zip 檔明確報錯", async () => {
+  const { readZip } = await import("../src/lib/zip.ts");
+  await assert.rejects(
+    () => readZip(new Blob([enc("this is not a zip file at all")])),
+    /EOCD|zip/
+  );
+});

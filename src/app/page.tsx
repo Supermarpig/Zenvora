@@ -8,6 +8,7 @@ import { ProjectCard } from "@/components/project/project-card";
 import { CreateProjectDialog } from "@/components/project/create-project-dialog";
 import { ModelConfigDialog } from "@/components/settings/model-config-dialog";
 import { PromptTemplateDialog } from "@/components/settings/prompt-template-dialog";
+import { BackupDialog } from "@/components/settings/backup-dialog";
 
 export default function HomePage() {
   const projects = useProjectStore((s) => s.projects);
@@ -27,6 +28,7 @@ export default function HomePage() {
                 資產庫
               </Link>
             </Button>
+            <BackupDialog />
             <PromptTemplateDialog />
             <ModelConfigDialog />
             <CreateProjectDialog />

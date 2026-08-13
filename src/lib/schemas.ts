@@ -190,6 +190,39 @@ export const updateFrameSchema = createFrameSchema.partial();
 
 export type UpdateFrameInput = z.infer<typeof updateFrameSchema>;
 
+// --- 備份快照 ---
+
+/**
+ * 備份/還原的快照格式。三種粒度共用同一個 schema,以 `scope` 區分 ——
+ * 否則會做成三套互不相容的匯出。
+ *
+ * 素材不塞進 JSON(base64 會膨脹 33%),而是以二進位放在同一個 zip 內,
+ * 用 mediaManifest 對應。`kind` 記錄原本存的是 data URL 還是 Blob,
+ * 否則還原時無從得知該重建成哪一種 —— 圖片存字串、影片存 Blob。
+ */
+export const mediaManifestEntrySchema = z.object({
+  /** IndexedDB 的 key,例如 image-{frameId} / video-{frameId} / asset-{id}-{n} */
+  key: z.string(),
+  /** zip 內的相對路徑 */
+  file: z.string(),
+  kind: z.enum(["dataUrl", "blob"]),
+  /** kind 為 dataUrl 時用來重組 data URL;blob 時用來還原 Blob 的 type */
+  mime: z.string().default("application/octet-stream"),
+});
+
+export const snapshotSchema = z.object({
+  version: z.literal(1),
+  scope: z.enum(["project", "all"]),
+  exportedAt: z.string(),
+  projects: z.array(projectSchema).default([]),
+  frames: z.array(frameSchema).default([]),
+  assets: z.array(characterAssetSchema).default([]),
+  mediaManifest: z.array(mediaManifestEntrySchema).default([]),
+});
+
+export type Snapshot = z.infer<typeof snapshotSchema>;
+export type MediaManifestEntry = z.infer<typeof mediaManifestEntrySchema>;
+
 // --- 模型設定 ---
 
 /**
