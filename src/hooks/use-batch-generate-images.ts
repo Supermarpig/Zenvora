@@ -4,6 +4,8 @@ import { useState } from "react";
 import { generateImage, type GenerateImageInput } from "@/actions/generate-image";
 import { saveImage } from "@/lib/db";
 import { composeCastPrompt } from "@/lib/cast";
+import { useModelConfigStore } from "@/stores/use-model-config-store";
+import { resolveImageModel } from "@/lib/model-config";
 import { buildImagePrompt } from "@/lib/veo-prompt";
 import { useFrameStore } from "@/stores/use-frame-store";
 import { useCharacterAssetStore } from "@/stores/use-character-asset-store";
@@ -26,7 +28,7 @@ export function useBatchGenerateImages(projectId: string) {
 
   async function run(opts: RunOptions = {}) {
     const {
-      model = "gemini-2.5-flash-image",
+      model,
       imageSize = "16:9",
       onlyMissing = true,
     } = opts;
@@ -37,6 +39,9 @@ export function useBatchGenerateImages(projectId: string) {
       .getFramesByProject(projectId)
       .filter((f) => f.prompt?.trim() && (!onlyMissing || !f.imageBase64Key));
     const allAssets = useCharacterAssetStore.getState().assets;
+    // 未指定時用設定頁選的模型(再退回內建預設)
+    const effectiveModel =
+      model ?? resolveImageModel(useModelConfigStore.getState().imageModel);
 
     if (frames.length === 0) {
       return { ok: 0, fail: 0, firstError: undefined as string | undefined };
@@ -58,7 +63,7 @@ export function useBatchGenerateImages(projectId: string) {
 
         const res = await generateImage({
           prompt,
-          model,
+          model: effectiveModel,
           imageSize,
           referenceImages: referenceImages.length ? referenceImages : undefined,
         });

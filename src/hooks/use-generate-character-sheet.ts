@@ -5,6 +5,8 @@ import { generateImage, type GenerateImageInput } from "@/actions/generate-image
 import { buildCharacterSheetPrompt } from "@/lib/character-sheet-prompt";
 import { saveAssetImage } from "@/lib/db";
 import { useCharacterAssetStore } from "@/stores/use-character-asset-store";
+import { useModelConfigStore } from "@/stores/use-model-config-store";
+import { resolveImageModel } from "@/lib/model-config";
 
 interface GenerateSheetArgs {
   assetId: string;
@@ -24,7 +26,9 @@ export function useGenerateCharacterSheet() {
 
       const result = await generateImage({
         prompt: buildCharacterSheetPrompt(asset),
-        model: model ?? "gemini-2.5-flash-image",
+        model:
+          model ??
+          resolveImageModel(useModelConfigStore.getState().imageModel),
         imageSize: asset.type === "presenter" ? "3:4" : "16:9",
       });
       if (!result.success) throw new Error(result.error);

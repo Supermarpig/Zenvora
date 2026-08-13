@@ -17,9 +17,11 @@ import { useImageStorage } from "@/hooks/use-image-storage";
 import { useFrameStore } from "@/stores/use-frame-store";
 import { useProjectStore } from "@/stores/use-project-store";
 import { useCharacterAssetStore } from "@/stores/use-character-asset-store";
-import { modelOptions, imageSizeOptions } from "@/lib/seedance-options";
+import { imageSizeOptions } from "@/lib/seedance-options";
 import { buildFrameGridPrompt } from "@/lib/storyboard-prompt";
 import { composeCastPrompt } from "@/lib/cast";
+import { useModelConfigStore } from "@/stores/use-model-config-store";
+import { resolveImageModel, imageModelOptions } from "@/lib/model-config";
 import { buildImagePrompt } from "@/lib/veo-prompt";
 import type { GenerateImageInput } from "@/actions/generate-image";
 
@@ -37,7 +39,12 @@ export function ImageGenerator({ frameId }: ImageGeneratorProps) {
   const generateMutation = useGenerateImage();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [model, setModel] = useState<GenerateImageInput["model"]>("gemini-2.5-flash-image");
+  const configuredImageModel = useModelConfigStore((s) => s.imageModel);
+  const customImageModels = useModelConfigStore((s) => s.customImageModels);
+  // 設定頁的選擇當預設值,但這裡仍可臨時改單次生成用的模型
+  const [model, setModel] = useState<string>(() =>
+    resolveImageModel(configuredImageModel)
+  );
   const [imageSize, setImageSize] = useState<GenerateImageInput["imageSize"]>("16:9");
 
   async function handleGenerate() {
@@ -149,12 +156,12 @@ export function ImageGenerator({ frameId }: ImageGeneratorProps) {
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        <Select value={model} onValueChange={(v) => setModel(v as GenerateImageInput["model"])}>
+        <Select value={model} onValueChange={setModel}>
           <SelectTrigger className="text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {modelOptions.map((opt) => (
+            {imageModelOptions(customImageModels).map((opt) => (
               <SelectItem key={opt.value} value={opt.value}>
                 {opt.label}
               </SelectItem>

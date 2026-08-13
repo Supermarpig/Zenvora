@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useProjectStore } from "@/stores/use-project-store";
 import { ProjectCard } from "@/components/project/project-card";
 import { CreateProjectDialog } from "@/components/project/create-project-dialog";
+import { ModelConfigDialog } from "@/components/settings/model-config-dialog";
 
 export default function HomePage() {
   const projects = useProjectStore((s) => s.projects);
@@ -25,6 +26,7 @@ export default function HomePage() {
                 人物資產
               </Link>
             </Button>
+            <ModelConfigDialog />
             <CreateProjectDialog />
           </div>
         </div>

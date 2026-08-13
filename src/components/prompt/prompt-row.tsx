@@ -21,6 +21,8 @@ import { useFrameStore } from "@/stores/use-frame-store";
 import { useProjectStore } from "@/stores/use-project-store";
 import { useCharacterAssetStore } from "@/stores/use-character-asset-store";
 import { composeCastPrompt } from "@/lib/cast";
+import { useModelConfigStore } from "@/stores/use-model-config-store";
+import { resolveImageModel } from "@/lib/model-config";
 import { useGenerateImage } from "@/hooks/use-generate-image";
 import { useImageStorage } from "@/hooks/use-image-storage";
 import { durationOptions, cameraOptions } from "@/lib/seedance-options";
@@ -37,6 +39,7 @@ export function PromptRow({ frame }: { frame: Frame }) {
   const allFrames = frames.filter((f) => f.projectId === frame.projectId);
   const project = useProjectStore((s) => s.getProject(frame.projectId));
   const allAssets = useCharacterAssetStore((s) => s.assets);
+  const configuredImageModel = useModelConfigStore((s) => s.imageModel);
 
   const { imageData, save, remove } = useImageStorage(
     frame.id,
@@ -132,7 +135,7 @@ export function PromptRow({ frame }: { frame: Frame }) {
 
       const result = await generateMutation.mutateAsync({
         prompt: composedPrompt,
-        model: "gemini-2.5-flash-image",
+        model: resolveImageModel(configuredImageModel),
         imageSize: "16:9",
         referenceImages: referenceImages.length ? referenceImages : undefined,
       });

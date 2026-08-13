@@ -25,10 +25,11 @@ import { buildVeoPrompt } from "@/lib/veo-prompt";
 import { loadImage } from "@/lib/db";
 import {
   VIDEO_MODELS,
-  DEFAULT_VIDEO_MODEL,
   getModelOption,
 } from "@/lib/video";
 import type { VideoAspectRatio } from "@/lib/video/types";
+import { useModelConfigStore } from "@/stores/use-model-config-store";
+import { resolveVideoModel } from "@/lib/model-config";
 
 const ASPECT_OPTIONS: { value: VideoAspectRatio; label: string }[] = [
   { value: "16:9", label: "16:9 橫向" },
@@ -45,7 +46,11 @@ export function VideoPanel({ frameId }: VideoPanelProps) {
   const { status, videoUrl, isSubmitting, elapsedSec, error, generate, removeVideo } =
     useVideoGeneration(frameId);
 
-  const [model, setModel] = useState<string>(DEFAULT_VIDEO_MODEL);
+  const configuredVideoModel = useModelConfigStore((s) => s.videoModel);
+  // 設定頁的選擇當預設值,面板上仍可臨時改單次生成用的引擎
+  const [model, setModel] = useState<string>(() =>
+    resolveVideoModel(configuredVideoModel)
+  );
   const [aspect, setAspect] = useState<VideoAspectRatio>("16:9");
   const [withAudio, setWithAudio] = useState(false);
   const [hasImage, setHasImage] = useState<boolean | null>(null);

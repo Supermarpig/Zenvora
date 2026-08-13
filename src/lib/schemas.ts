@@ -168,6 +168,37 @@ export const updateFrameSchema = createFrameSchema.partial();
 
 export type UpdateFrameInput = z.infer<typeof updateFrameSchema>;
 
+// --- 模型設定 ---
+
+/**
+ * 使用者可覆寫的模型選擇。
+ *
+ * **金鑰刻意不在這裡。** 這個 store 走 localStorage,任何同源腳本都讀得到;
+ * 把 API key 放進來等於放棄 server action 的保護。金鑰一律留在伺服器端
+ * 環境變數,這裡只存 model id 與標籤。
+ *
+ * 未設定的欄位沿用 code 裡的內建預設,所以不需要初始化資料,
+ * 內建預設也能隨版本更新而生效。
+ */
+export const customModelSchema = z.object({
+  id: z.string().min(1, "model id 不可為空"),
+  label: z.string().min(1, "顯示名稱不可為空"),
+  creditCost: z.number().min(0).default(2),
+});
+
+export type CustomModel = z.infer<typeof customModelSchema>;
+
+export const modelConfigSchema = z.object({
+  /** 生圖預設模型;空字串 = 用內建預設 */
+  imageModel: z.string().default(""),
+  /** 生影片預設模型;空字串 = 用內建預設 */
+  videoModel: z.string().default(""),
+  /** 內建清單沒有的模型,讓使用者不必等改 code 就能試新模型 */
+  customImageModels: z.array(customModelSchema).default([]),
+});
+
+export type ModelConfig = z.infer<typeof modelConfigSchema>;
+
 // --- 未來擴充：使用者 & 鑽石金流 ---
 
 export const userSchema = z.object({

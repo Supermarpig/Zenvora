@@ -2,15 +2,15 @@
 
 import { z } from "zod";
 import { MODEL_CREDIT_COST } from "@/lib/credits";
+import { DEFAULT_IMAGE_MODEL } from "@/lib/model-config";
 
 const generateImageInputSchema = z.object({
   prompt: z.string().min(1, "請輸入圖片描述"),
-  model: z
-    .enum([
-      "gemini-2.5-flash-image",
-      "gemini-3-pro-image",
-    ])
-    .default("gemini-2.5-flash-image"),
+  // 刻意不用 enum:使用者可以在設定裡加內建清單沒有的 model id,
+  // 硬擋在 zod 這層等於每次 Google 出新模型都要改 code 重新部署。
+  // 換來的代價是打錯 id 會由 Google 回 404,而非本地就攔下 —— 錯誤訊息
+  // 會原樣顯示在 toast,足以判斷。
+  model: z.string().min(1, "請指定模型").default(DEFAULT_IMAGE_MODEL),
   imageSize: z
     .enum(["1:1", "3:2", "2:3", "3:4", "4:3", "9:16", "16:9"])
     .default("16:9"),
