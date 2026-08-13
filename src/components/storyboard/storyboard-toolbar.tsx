@@ -11,6 +11,7 @@ import { ExportTimelineButton } from "./export-timeline-button";
 import { ImportJsonButton } from "./import-json-button";
 import { PlanReviewDialog } from "./plan-review-dialog";
 import { TimelinePreviewDialog } from "./timeline-preview-dialog";
+import { RoughCutDialog } from "./rough-cut-dialog";
 import { useProjectStore } from "@/stores/use-project-store";
 import { useFrameStore } from "@/stores/use-frame-store";
 import { seedProject, seedFrames } from "@/lib/seed-data";
@@ -67,6 +68,7 @@ export function StoryboardToolbar({
         <PlanReviewDialog projectId={projectId} />
         <BatchImageButton projectId={projectId} />
         <ImportJsonButton projectId={projectId} />
+        <RoughCutDialog projectId={projectId} />
         <TimelinePreviewDialog
           projectId={projectId}
           projectName={projectName}
