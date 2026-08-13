@@ -135,6 +135,11 @@ export const frameSchema = z.object({
   /** 本格出場的人物資產 id */
   castIds: z.array(z.string()).optional(),
   // --- 影片生成 ---
+  // 這裡存的是「分鏡的最終結果」——使用者重開瀏覽器後看到的影片與狀態。
+  // 進行中的任務追蹤(providerJobId、輪詢)在 use-job-store,那邊同樣是 persist,
+  // 所以界線是「結果 vs 任務」而不是「持久 vs 暫時」。
+  // 注意 videoStatus 與 VideoJob.status 在 running / succeeded / failed 三個值上
+  // 重疊,更新時要同步兩邊,否則會出現「job 已成功但分鏡還顯示 running」。
   /** IndexedDB 影片 key(video-{frameId}) */
   videoKey: z.string().optional(),
   videoModel: z.string().optional(),

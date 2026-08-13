@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import { MODEL_CREDIT_COST } from "@/lib/credits";
 
 const generateImageInputSchema = z.object({
   prompt: z.string().min(1, "請輸入圖片描述"),
@@ -31,11 +32,6 @@ export type GenerateImageInput = z.infer<typeof generateImageInputSchema>;
 export type GenerateImageResult =
   | { success: true; base64: string; creditCost: number }
   | { success: false; error: string };
-
-const MODEL_CREDIT_COST: Record<string, number> = {
-  "gemini-2.5-flash-image": 2,
-  "gemini-3-pro-image": 10,
-};
 
 export async function generateImage(
   input: GenerateImageInput
