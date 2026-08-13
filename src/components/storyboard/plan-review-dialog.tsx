@@ -31,6 +31,8 @@ import {
   type AiPlanIssue,
   type AiIssueCategory,
 } from "@/actions/review-plan-ai";
+import { inferAsset } from "@/actions/infer-asset";
+import { ASSET_KIND_LABELS } from "@/lib/schemas";
 
 const AI_CATEGORY_LABELS: Record<AiIssueCategory, string> = {
   continuity: "連戲",
@@ -69,9 +71,12 @@ export function PlanReviewDialog({ projectId }: { projectId: string }) {
   const [review, setReview] = useState<PlanReview | null>(null);
   const [aiIssues, setAiIssues] = useState<AiPlanIssue[] | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const [fillingAsset, setFillingAsset] = useState<string | null>(null);
+  const [filled, setFilled] = useState<Set<string>>(new Set());
 
   const getFramesByProject = useFrameStore((s) => s.getFramesByProject);
   const assets = useCharacterAssetStore((s) => s.assets);
+  const addAsset = useCharacterAssetStore((s) => s.addAsset);
   const imageModelOverride = useModelConfigStore((s) => s.imageModel);
   const videoModelOverride = useModelConfigStore((s) => s.videoModel);
 
@@ -81,6 +86,7 @@ export function PlanReviewDialog({ projectId }: { projectId: string }) {
 
     // 單價在這裡查表後傳入,plan-review 本身保持純函式(才能單元測試)
     setAiIssues(null);
+    setFilled(new Set());
     setReview(
       reviewPlan(getFramesByProject(projectId), assets, {
         imageUnitCredits: MODEL_CREDIT_COST[imageModel] ?? 2,
@@ -88,6 +94,41 @@ export function PlanReviewDialog({ projectId }: { projectId: string }) {
       })
     );
     setOpen(true);
+  }
+
+  /**
+   * 補齊一個缺失的資產:讀它出現過的分鏡描述,讓模型推一份外觀草稿。
+   * 使用者再改比從白紙開始快得多。
+   */
+  async function handleFillAsset(name: string) {
+    const contexts = getFramesByProject(projectId)
+      .map((f) => f.prompt)
+      .filter((p) => p.includes(`@${name}`))
+      .slice(0, 6);
+
+    if (contexts.length === 0) {
+      toast.error(`找不到提到 @${name} 的分鏡`);
+      return;
+    }
+
+    setFillingAsset(name);
+    const result = await inferAsset({ name, contexts });
+    setFillingAsset(null);
+
+    if (!result.success) {
+      toast.error(result.error);
+      return;
+    }
+    addAsset({
+      name,
+      kind: result.kind,
+      type: "actor",
+      appearance: result.appearance,
+    });
+    setFilled((f) => new Set(f).add(name));
+    toast.success(
+      `已建立${ASSET_KIND_LABELS[result.kind]}資產「${name}」，外觀可到資產庫再修`
+    );
   }
 
   /** AI 檢查要花 API 額度,所以按需觸發而不是開啟就跑 */
@@ -203,6 +244,42 @@ export function PlanReviewDialog({ projectId }: { projectId: string }) {
                     </div>
                   );
                 })
+              )}
+
+              {/* 批量補齊:@ 了但不存在的資產,讓模型讀上下文推一份外觀草稿 */}
+              {review.missingAssets.filter((n) => !filled.has(n)).length > 0 && (
+                <div className="space-y-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+                  <p className="text-sm font-medium">補齊缺失的資產</p>
+                  <p className="text-xs text-muted-foreground">
+                    這些名稱被 @ 引用但資產庫沒有。建立後 @ 才會帶入參考圖，否則只會被當普通文字。
+                  </p>
+                  <ul className="space-y-1.5">
+                    {review.missingAssets
+                      .filter((n) => !filled.has(n))
+                      .map((name) => (
+                        <li
+                          key={name}
+                          className="flex items-center justify-between gap-2 rounded bg-background px-2 py-1.5"
+                        >
+                          <code className="text-xs">@{name}</code>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            className="h-7 text-xs"
+                            disabled={fillingAsset !== null}
+                            onClick={() => handleFillAsset(name)}
+                          >
+                            {fillingAsset === name ? (
+                              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                            ) : (
+                              <Sparkles className="mr-1 h-3 w-3" />
+                            )}
+                            讀上下文建立
+                          </Button>
+                        </li>
+                      ))}
+                  </ul>
+                </div>
               )}
 
               {/* AI 語意檢查:程式規則管不到的連戲、跳軸、描述品質 */}

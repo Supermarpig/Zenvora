@@ -54,6 +54,8 @@ export interface PlanReview {
   issues: PlanIssue[];
   cost: CostEstimate;
   totalDurationSec: number;
+  /** `@` 了但資產庫沒有的名稱,結構化回傳讓 UI 能直接提供「建立資產」動作 */
+  missingAssets: string[];
 }
 
 /** 短影音的完看長度區間,超出只給 hint 不擋 */
@@ -254,5 +256,5 @@ export function reviewPlan(
   const rank: Record<IssueSeverity, number> = { blocker: 0, warning: 1, hint: 2 };
   issues.sort((a, b) => rank[a.severity] - rank[b.severity]);
 
-  return { issues, cost, totalDurationSec };
+  return { issues, cost, totalDurationSec, missingAssets: missing };
 }

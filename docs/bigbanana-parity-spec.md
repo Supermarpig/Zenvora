@@ -997,7 +997,10 @@ const STYLE_LENS: Record<string, { verbose: string; compact: string }>
 - [x] ~~參考圖依 kind 分歧~~ —— 新增 `scene-sheet`(多視角 establishing shots,**不是** turnaround —— 對一個房間說「轉一圈」沒有意義)與 `prop-sheet`(白底多角度產品圖,道具與服裝共用)。這兩個模板也一併納入 N3 的可編輯清單
 - [x] ~~資產庫 UI~~ —— kind 選擇、依 kind 篩選(附數量)、卡片徽章;選非人物時「角色類型」欄位自動隱藏。使用者可見的「人物資產」字樣一併改為「資產庫」
 - [x] ~~`findMissingMentions()`~~ —— 已於 N7 實作
-- [ ] **批量補齊缺失資產未做** —— 掃出缺失(已有)之後的「一鍵建立 + 批次生成參考圖」還沒接。生成參考圖需要 API 額度,無法在目前狀態下驗證產出
+- [x] ~~批量補齊缺失資產:掃描 + 一鍵建立~~ —— 2026-08-13 完成。`reviewPlan` 改回傳結構化的 `missingAssets`,計畫預審對話框列出缺失名稱並提供「讀上下文建立」。
+  `actions/infer-asset.ts` 讀該名稱出現過的分鏡描述(最多 6 段),推斷 **kind** 與英文外觀草稿 —— 與其要使用者從零想外觀,不如給他一份能改的稿。
+  **實測**:三鏡引用 `@管家` 與 `@老宅書房`,前者正確推成 `character`(外觀綜合了 worn black tailcoat / white gloves / weathered face),後者正確推成 `scene`(dark walnut panelling / bookshelves / leather armchairs)
+- [ ] **批次生成參考圖未做** —— 生圖需要 API 額度(免費層 `limit: 0`),無法驗證產出。資產建立後可逐個到資產庫按「生成設定圖」
 - [ ] **`ownerAssetId` 只有 schema,沒有 UI** —— 服裝歸屬哪個人物尚未能在介面設定。要用到它的情境(換裝)屬更後面的功能
 
 驗收另有 11 個單元測試涵蓋分組出句與各 kind 的參考圖句式。
