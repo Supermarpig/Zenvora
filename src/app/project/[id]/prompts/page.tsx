@@ -3,13 +3,14 @@
 import { use, useMemo } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PromptTable } from "@/components/prompt/prompt-table";
 import { GridSequenceTools } from "@/components/prompt/grid-sequence-tools";
 import { CharacterManager } from "@/components/storyboard/character-manager";
 import { useProjectStore } from "@/stores/use-project-store";
 import { useFrameStore } from "@/stores/use-frame-store";
+import { useProjectStoreHydrated } from "@/hooks/use-project-hydrated";
 
 export default function PromptsPage({
   params,
@@ -17,6 +18,7 @@ export default function PromptsPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const hydrated = useProjectStoreHydrated();
   const project = useProjectStore((s) => s.getProject(id));
   const allFrames = useFrameStore((s) => s.frames);
   const frames = useMemo(
@@ -26,6 +28,15 @@ export default function PromptsPage({
         .sort((a, b) => a.order - b.order),
     [allFrames, id]
   );
+
+  // 還沒 hydrate 完就還不知道專案存不存在,此時不能判 404
+  if (!hydrated) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   if (!project) {
     notFound();
