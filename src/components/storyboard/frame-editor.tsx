@@ -59,21 +59,37 @@ export function FrameEditor() {
     },
   });
 
+  // 只在「切換到另一個分鏡」時把表單灌回 store 的值。
+  // 依賴刻意只放 selectedFrameId 而非整個 frame 物件 —— 否則下面的自動儲存
+  // 一改 store 就會產生新 frame 物件、觸發 reset、再觸發儲存,形成循環。
+  // frame 從 getState() 即時取,不會拿到 stale 值。
   useEffect(() => {
-    if (frame) {
-      form.reset({
-        prompt: frame.prompt,
-        dialogue: frame.dialogue ?? "",
-        speaker: frame.speaker ?? "",
-        cameraMovement: frame.cameraMovement,
-        duration: frame.duration,
-        style: frame.style,
-        mood: frame.mood,
-      });
-    }
-  }, [frame, form]);
+    if (!selectedFrameId) return;
+    const f = useFrameStore.getState().getFrame(selectedFrameId);
+    if (!f) return;
+    form.reset({
+      prompt: f.prompt,
+      dialogue: f.dialogue ?? "",
+      speaker: f.speaker ?? "",
+      cameraMovement: f.cameraMovement,
+      duration: f.duration,
+      style: f.style,
+      mood: f.mood,
+    });
+  }, [selectedFrameId, form]);
 
   const watchedValues = form.watch();
+
+  // 自動儲存,與提示詞總表的行為一致(那邊是 debounce 500ms)。
+  // 依賴用序列化字串:值沒真的變就不會重新排程,循環在此斷開。
+  const serializedValues = JSON.stringify(watchedValues);
+  useEffect(() => {
+    if (!selectedFrameId) return;
+    const timer = setTimeout(() => {
+      updateFrame(selectedFrameId, JSON.parse(serializedValues) as Partial<Frame>);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [serializedValues, selectedFrameId, updateFrame]);
 
   const veoPreview = useMemo(() => {
     if (!frame) return "";
