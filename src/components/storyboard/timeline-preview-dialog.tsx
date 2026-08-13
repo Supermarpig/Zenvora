@@ -17,11 +17,23 @@ import {
   type ExportTimeline,
   type FrameAssetFlags,
 } from "@/lib/timeline-export";
+import type { Frame } from "@/lib/schemas";
 
 interface ClipMedia {
   imageUrl?: string;
   videoUrl?: string;
 }
+
+/** 影片生成任務狀態,與素材有無是兩件事(失敗的鏡次也可能還留著舊圖) */
+type RenderStatus = NonNullable<Frame["videoStatus"]>;
+
+const RENDER_LABELS: Record<RenderStatus, string> = {
+  none: "未開始",
+  queued: "排隊中",
+  running: "生成中",
+  succeeded: "已完成",
+  failed: "失敗",
+};
 
 /**
  * 時間軸預覽與依序播放。
@@ -39,6 +51,7 @@ export function TimelinePreviewDialog({
   const [open, setOpen] = useState(false);
   const [timeline, setTimeline] = useState<ExportTimeline | null>(null);
   const [media, setMedia] = useState<ClipMedia[]>([]);
+  const [statuses, setStatuses] = useState<RenderStatus[]>([]);
   const [current, setCurrent] = useState(0);
   const [playing, setPlaying] = useState(false);
 
@@ -80,6 +93,7 @@ export function TimelinePreviewDialog({
     }
 
     setMedia(loaded);
+    setStatuses(frames.map((f) => f.videoStatus ?? "none"));
     setTimeline(buildTimeline(projectName, frames, flags, new Date().toISOString()));
     setCurrent(0);
     setPlaying(false);
@@ -157,6 +171,30 @@ export function TimelinePreviewDialog({
                 </span>
               </div>
 
+              {/* 渲染追蹤:任務狀態與「素材有無」是兩件事,失敗的鏡次可能還留著舊圖 */}
+              <div className="flex flex-wrap gap-x-4 gap-y-1 rounded-lg border bg-muted/30 px-3 py-2 text-xs">
+                {(Object.keys(RENDER_LABELS) as RenderStatus[])
+                  .map((st) => ({
+                    st,
+                    count: statuses.filter((s) => s === st).length,
+                  }))
+                  .filter((x) => x.count > 0)
+                  .map(({ st, count }) => (
+                    <span
+                      key={st}
+                      className={
+                        st === "failed"
+                          ? "font-medium text-destructive"
+                          : st === "running" || st === "queued"
+                            ? "font-medium text-amber-600 dark:text-amber-500"
+                            : "text-muted-foreground"
+                      }
+                    >
+                      {RENDER_LABELS[st]} {count}
+                    </span>
+                  ))}
+              </div>
+
               {/* 水平 gantt:寬度正比於時長,缺素材的鏡次用虛線標出 */}
               <div className="flex h-12 w-full overflow-hidden rounded-lg border">
                 {timeline.clips.map((c, i) => {
@@ -172,18 +210,23 @@ export function TimelinePreviewDialog({
                         setPlaying(false);
                       }}
                       style={{ width: `${width}%` }}
-                      title={`第 ${c.shot} 鏡 · ${c.startSec}s–${c.startSec + c.durationSec}s`}
+                      title={`第 ${c.shot} 鏡 · ${c.startSec}s–${c.startSec + c.durationSec}s · ${RENDER_LABELS[statuses[i] ?? "none"]}`}
                       className={`relative shrink-0 border-r text-[10px] transition-colors last:border-r-0 ${
                         i === current ? "ring-2 ring-inset ring-primary" : ""
                       } ${
-                        hasVideo
-                          ? "bg-primary/70 text-primary-foreground hover:bg-primary"
-                          : hasImage
-                            ? "bg-primary/25 hover:bg-primary/40"
-                            : "border-dashed bg-muted text-muted-foreground hover:bg-muted/70"
+                        statuses[i] === "failed"
+                          ? "bg-destructive/25 text-destructive hover:bg-destructive/35"
+                          : hasVideo
+                            ? "bg-primary/70 text-primary-foreground hover:bg-primary"
+                            : hasImage
+                              ? "bg-primary/25 hover:bg-primary/40"
+                              : "border-dashed bg-muted text-muted-foreground hover:bg-muted/70"
                       }`}
                     >
                       {c.shot}
+                      {(statuses[i] === "running" || statuses[i] === "queued") && (
+                        <span className="absolute inset-x-0 bottom-0 h-1 animate-pulse bg-amber-500" />
+                      )}
                     </button>
                   );
                 })}
@@ -199,6 +242,9 @@ export function TimelinePreviewDialog({
                 <span className="flex items-center gap-1.5">
                   <span className="h-2.5 w-4 rounded-sm border border-dashed bg-muted" />
                   無素材
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2.5 w-4 rounded-sm bg-destructive/25" />生成失敗
                 </span>
               </div>
 
