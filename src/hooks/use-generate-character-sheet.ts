@@ -6,6 +6,7 @@ import { buildCharacterSheetPrompt } from "@/lib/character-sheet-prompt";
 import { saveAssetImage } from "@/lib/db";
 import { useCharacterAssetStore } from "@/stores/use-character-asset-store";
 import { useModelConfigStore } from "@/stores/use-model-config-store";
+import { usePromptTemplateStore } from "@/stores/use-prompt-template-store";
 import { resolveImageModel } from "@/lib/model-config";
 
 interface GenerateSheetArgs {
@@ -25,7 +26,10 @@ export function useGenerateCharacterSheet() {
       if (!asset) throw new Error("找不到人物資產");
 
       const result = await generateImage({
-        prompt: buildCharacterSheetPrompt(asset),
+        prompt: buildCharacterSheetPrompt(asset, {
+          characterSheet: usePromptTemplateStore.getState().overrides["character-sheet"],
+          presenterSheet: usePromptTemplateStore.getState().overrides["presenter-sheet"],
+        }),
         model:
           model ??
           resolveImageModel(useModelConfigStore.getState().imageModel),

@@ -21,6 +21,7 @@ import { imageSizeOptions } from "@/lib/seedance-options";
 import { buildFrameGridPrompt } from "@/lib/storyboard-prompt";
 import { composeCastPrompt } from "@/lib/cast";
 import { useModelConfigStore } from "@/stores/use-model-config-store";
+import { usePromptTemplateStore } from "@/stores/use-prompt-template-store";
 import { resolveImageModel, imageModelOptions } from "@/lib/model-config";
 import { buildImagePrompt } from "@/lib/veo-prompt";
 import type { GenerateImageInput } from "@/actions/generate-image";
@@ -40,6 +41,7 @@ export function ImageGenerator({ frameId }: ImageGeneratorProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const configuredImageModel = useModelConfigStore((s) => s.imageModel);
+  const imageTemplate = usePromptTemplateStore((s) => s.overrides.image);
   const customImageModels = useModelConfigStore((s) => s.customImageModels);
   // 設定頁的選擇當預設值,但這裡仍可臨時改單次生成用的模型
   const [model, setModel] = useState<string>(() =>
@@ -58,7 +60,7 @@ export function ImageGenerator({ frameId }: ImageGeneratorProps) {
       // 否則同一個分鏡從不同入口生出來的圖風格會不一致
       const { prompt: composedPrompt, referenceImages } =
         await composeCastPrompt(
-          buildImagePrompt(frame),
+          buildImagePrompt(frame, imageTemplate),
           allAssets,
           frame.castIds ?? []
         );

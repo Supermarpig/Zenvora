@@ -5,6 +5,7 @@ import { generateImage, type GenerateImageInput } from "@/actions/generate-image
 import { saveImage } from "@/lib/db";
 import { composeCastPrompt } from "@/lib/cast";
 import { useModelConfigStore } from "@/stores/use-model-config-store";
+import { usePromptTemplateStore } from "@/stores/use-prompt-template-store";
 import { resolveImageModel } from "@/lib/model-config";
 import { buildImagePrompt } from "@/lib/veo-prompt";
 import { useFrameStore } from "@/stores/use-frame-store";
@@ -39,6 +40,7 @@ export function useBatchGenerateImages(projectId: string) {
       .getFramesByProject(projectId)
       .filter((f) => f.prompt?.trim() && (!onlyMissing || !f.imageBase64Key));
     const allAssets = useCharacterAssetStore.getState().assets;
+    const imageTemplate = usePromptTemplateStore.getState().overrides.image;
     // 未指定時用設定頁選的模型(再退回內建預設)
     const effectiveModel =
       model ?? resolveImageModel(useModelConfigStore.getState().imageModel);
@@ -56,7 +58,7 @@ export function useBatchGenerateImages(projectId: string) {
       try {
         // 與分鏡編輯器、提示詞總表走同一條組句路徑(buildImagePrompt)
         const { prompt, referenceImages } = await composeCastPrompt(
-          buildImagePrompt(f),
+          buildImagePrompt(f, imageTemplate),
           allAssets,
           f.castIds ?? []
         );

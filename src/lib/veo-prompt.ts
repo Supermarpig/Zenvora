@@ -1,5 +1,6 @@
 import type { Frame } from "./schemas";
 import { STYLE_LENS, MOOD_LIGHTING } from "./style-tables";
+import { renderTemplate, TEMPLATE_META } from "./prompt-template";
 
 const SPEAKER_EN: Record<string, string> = {
   空服員: "The flight attendant",
@@ -41,15 +42,16 @@ const CAMERA_DIRECTIONS: Record<string, string> = {
 /**
  * 生圖 prompt（Gemini 單張圖片）：場景 + 鏡頭風格 + 光線氛圍
  */
-export function buildImagePrompt(frame: Frame): string {
+export function buildImagePrompt(frame: Frame, template?: string): string {
   const lens = STYLE_LENS[frame.style]?.verbose ?? frame.style;
   const lighting = MOOD_LIGHTING[frame.mood]?.verbose ?? frame.mood;
 
-  return [
-    frame.prompt,
-    `${lens}. ${lighting}.`,
-    `Do not include any text, words, subtitles, captions, labels, watermarks, or speech bubbles anywhere in the image. Pure visual only.`,
-  ].join("\n\n");
+  // template 未傳則用內建 —— 保持純函式,呼叫方負責從 store 取覆寫值
+  return renderTemplate(template?.trim() || TEMPLATE_META.image.builtIn, {
+    prompt: frame.prompt,
+    lens,
+    lighting,
+  });
 }
 
 /**

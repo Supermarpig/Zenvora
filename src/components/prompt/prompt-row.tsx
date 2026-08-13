@@ -22,6 +22,7 @@ import { useProjectStore } from "@/stores/use-project-store";
 import { useCharacterAssetStore } from "@/stores/use-character-asset-store";
 import { composeCastPrompt } from "@/lib/cast";
 import { useModelConfigStore } from "@/stores/use-model-config-store";
+import { usePromptTemplateStore } from "@/stores/use-prompt-template-store";
 import { resolveImageModel } from "@/lib/model-config";
 import { useGenerateImage } from "@/hooks/use-generate-image";
 import { useImageStorage } from "@/hooks/use-image-storage";
@@ -40,6 +41,7 @@ export function PromptRow({ frame }: { frame: Frame }) {
   const project = useProjectStore((s) => s.getProject(frame.projectId));
   const allAssets = useCharacterAssetStore((s) => s.assets);
   const configuredImageModel = useModelConfigStore((s) => s.imageModel);
+  const imageTemplate = usePromptTemplateStore((s) => s.overrides.image);
 
   const { imageData, save, remove } = useImageStorage(
     frame.id,
@@ -115,7 +117,7 @@ export function PromptRow({ frame }: { frame: Frame }) {
 
   const characters = project?.characters ?? [];
   const liveFrame: Frame = { ...frame, prompt, speaker, dialogue };
-  const imagePrompt = buildImagePrompt(liveFrame);
+  const imagePrompt = buildImagePrompt(liveFrame, imageTemplate);
   const veoPrompt = useFlow
     ? buildFlowPrompt(liveFrame, mute)
     : buildVeoPrompt(liveFrame, { mute });

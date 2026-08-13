@@ -1018,12 +1018,21 @@ const STYLE_LENS: Record<string, { verbose: string; compact: string }>
 
 ### N3 Prompt 管理(中 · 弱依賴 N2)
 
-- [ ] `promptTemplateSchema` + `promptTemplateVersionSchema`
-- [ ] `renderTemplate()`(`{{key}}` 平面替換,未知變數原樣保留)
-- [ ] 五個 prompt lib 改為「讀覆寫,無則用內建常數」
-- [ ] 設定頁:編輯 + 即時預覽 + 版本清單 + 回滾 + 還原內建
-- [ ] 各模板可用變數清單顯示在 UI(否則使用者不知道能填什麼)
-- [ ] 驗收:未覆寫時生成的 prompt 與現行**逐字相同**(防回歸)
+**2026-08-13 完成,但只開放三個模板(理由見下)。**
+
+- [x] ~~`renderTemplate()`~~ —— `{{key}}` 平面替換,**未知變數原樣保留**而非變空字串(打錯變數名要能從輸出看出來)
+- [x] ~~模板覆寫 + 版本歷史~~ —— `use-prompt-template-store.ts`。store 只存「改過的」模板,沒改過的鍵不存在;內容沒變不新增版本;每個模板保留 20 筆
+- [x] ~~設定頁~~ —— 首頁「Prompt 模板」對話框:分頁切換、編輯、**即時預覽(變數換成範例值)**、版本歷史、回滾、還原內建
+- [x] ~~可用變數清單顯示在 UI~~ —— 並有兩個單元測試確保「宣告的變數都真的在模板裡」「模板用到的變數都有宣告」,否則 UI 會顯示不存在的變數
+- [x] ~~驗收:未覆寫時逐字相同~~ —— 三個防回歸測試,基準字串從改動前的實作抄出
+- [ ] **只做了 `image` / `character-sheet` / `presenter-sheet` 三個**。`buildVeoPrompt`、`buildGridPrompt`、`buildFlowPrompt`、`buildExtendPrompt`、`buildSeedancePrompt` 有大量條件分支(單鏡與多鏡走完全不同句式、靜音、運鏡對照表、宮格排版),硬塞進平面模板會**比現在更難改**。要開放這些得先設計條件式模板語法,那是另一個量級的工程
+
+**兩個與初稿不同的決定**:
+
+1. **沒有用 zod schema**,模板與版本用 TypeScript interface。這是內部資料不是外部輸入,加 zod 只是多一層無用的執行期檢查(與 N7 同樣的判斷)。
+2. **builder 接可選的 `template` 參數而非自己讀 store**。`buildImagePrompt(frame, template?)` 保持純函式才能單元測試,由呼叫方(四個生圖入口)負責從 store 取覆寫值。
+
+驗收實測:覆寫模板後生圖 payload 確實使用新模板且內建尾段消失;回滾能還原到指定版本;還原內建後覆寫從 store 移除但版本歷史保留(可能還想撿回舊版)。
 
 ### N4 交付中心(大 · 弱依賴 N1)
 

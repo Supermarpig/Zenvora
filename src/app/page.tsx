@@ -7,6 +7,7 @@ import { useProjectStore } from "@/stores/use-project-store";
 import { ProjectCard } from "@/components/project/project-card";
 import { CreateProjectDialog } from "@/components/project/create-project-dialog";
 import { ModelConfigDialog } from "@/components/settings/model-config-dialog";
+import { PromptTemplateDialog } from "@/components/settings/prompt-template-dialog";
 
 export default function HomePage() {
   const projects = useProjectStore((s) => s.projects);
@@ -26,6 +27,7 @@ export default function HomePage() {
                 人物資產
               </Link>
             </Button>
+            <PromptTemplateDialog />
             <ModelConfigDialog />
             <CreateProjectDialog />
           </div>
