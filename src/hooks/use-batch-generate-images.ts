@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { generateImage, type GenerateImageInput } from "@/actions/generate-image";
 import { saveImage } from "@/lib/db";
-import { resolveCast } from "@/lib/cast";
+import { composeCastPrompt } from "@/lib/cast";
 import { useFrameStore } from "@/stores/use-frame-store";
 import { useCharacterAssetStore } from "@/stores/use-character-asset-store";
 
@@ -22,7 +22,6 @@ interface RunOptions {
 export function useBatchGenerateImages(projectId: string) {
   const [progress, setProgress] = useState<BatchProgress | null>(null);
   const updateFrame = useFrameStore((s) => s.updateFrame);
-  const getAssets = useCharacterAssetStore((s) => s.getAssets);
 
   async function run(opts: RunOptions = {}) {
     const {
@@ -31,11 +30,12 @@ export function useBatchGenerateImages(projectId: string) {
       onlyMissing = true,
     } = opts;
 
-    // 取最新 frames(非響應式,執行當下抓)
+    // 取最新 frames / assets(非響應式,執行當下抓)
     const frames = useFrameStore
       .getState()
       .getFramesByProject(projectId)
       .filter((f) => f.prompt?.trim() && (!onlyMissing || !f.imageBase64Key));
+    const allAssets = useCharacterAssetStore.getState().assets;
 
     if (frames.length === 0) {
       return { ok: 0, fail: 0, firstError: undefined as string | undefined };
@@ -48,9 +48,11 @@ export function useBatchGenerateImages(projectId: string) {
 
     for (const f of frames) {
       try {
-        const cast = getAssets(f.castIds ?? []);
-        const { promptPrefix, referenceImages } = await resolveCast(cast);
-        const prompt = promptPrefix ? `${promptPrefix}\n\n${f.prompt}` : f.prompt;
+        const { prompt, referenceImages } = await composeCastPrompt(
+          f.prompt,
+          allAssets,
+          f.castIds ?? []
+        );
 
         const res = await generateImage({
           prompt,

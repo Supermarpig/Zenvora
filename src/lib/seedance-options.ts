@@ -32,7 +32,7 @@ export const moodOptions = MOOD_OPTIONS.map((value) => ({
 
 export const modelOptions = [
   { value: "gemini-2.5-flash-image", label: "Gemini 2.5 Flash（快速）" },
-  { value: "gemini-3-pro-image-preview", label: "Gemini 3 Pro（高品質）" },
+  { value: "gemini-3-pro-image", label: "Gemini 3 Pro（高品質）" },
 ] as const;
 
 export const imageSizeOptions = [

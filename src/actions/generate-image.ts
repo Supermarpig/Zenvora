@@ -7,7 +7,7 @@ const generateImageInputSchema = z.object({
   model: z
     .enum([
       "gemini-2.5-flash-image",
-      "gemini-3-pro-image-preview",
+      "gemini-3-pro-image",
     ])
     .default("gemini-2.5-flash-image"),
   imageSize: z
@@ -34,7 +34,7 @@ export type GenerateImageResult =
 
 const MODEL_CREDIT_COST: Record<string, number> = {
   "gemini-2.5-flash-image": 2,
-  "gemini-3-pro-image-preview": 10,
+  "gemini-3-pro-image": 10,
 };
 
 export async function generateImage(
@@ -81,7 +81,7 @@ export async function generateImage(
       const errorBody = await res.text();
       return {
         success: false,
-        error: `Google API 錯誤 ${res.status}: ${errorBody.slice(0, 200)}`,
+        error: `Google API 錯誤 ${res.status}: ${errorBody.slice(0, 800)}`,
       };
     }
 

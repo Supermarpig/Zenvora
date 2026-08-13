@@ -8,6 +8,7 @@ import { CharacterManager } from "./character-manager";
 import { StoryboardGenerator } from "./storyboard-generator";
 import { BatchImageButton } from "./batch-image-button";
 import { ExportTimelineButton } from "./export-timeline-button";
+import { ImportJsonButton } from "./import-json-button";
 import { useProjectStore } from "@/stores/use-project-store";
 import { useFrameStore } from "@/stores/use-frame-store";
 import { seedProject, seedFrames } from "@/lib/seed-data";
@@ -62,6 +63,7 @@ export function StoryboardToolbar({
         )}
         <StoryboardGenerator projectId={projectId} />
         <BatchImageButton projectId={projectId} />
+        <ImportJsonButton projectId={projectId} />
         <ExportTimelineButton
           projectId={projectId}
           projectName={projectName}

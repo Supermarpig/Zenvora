@@ -19,6 +19,8 @@ import { buildVeoPrompt, buildImagePrompt, buildFlowPrompt, buildExtendPrompt } 
 import { buildGridPrompt } from "@/lib/storyboard-prompt";
 import { useFrameStore } from "@/stores/use-frame-store";
 import { useProjectStore } from "@/stores/use-project-store";
+import { useCharacterAssetStore } from "@/stores/use-character-asset-store";
+import { composeCastPrompt } from "@/lib/cast";
 import { useGenerateImage } from "@/hooks/use-generate-image";
 import { useImageStorage } from "@/hooks/use-image-storage";
 import { durationOptions, cameraOptions } from "@/lib/seedance-options";
@@ -33,6 +35,7 @@ export function PromptRow({ frame }: { frame: Frame }) {
   const frames = useFrameStore((s) => s.frames);
   const allFrames = frames.filter((f) => f.projectId === frame.projectId);
   const project = useProjectStore((s) => s.getProject(frame.projectId));
+  const allAssets = useCharacterAssetStore((s) => s.assets);
 
   const { imageData, save, remove } = useImageStorage(frame.id);
   const generateMutation = useGenerateImage();
@@ -119,10 +122,15 @@ export function PromptRow({ frame }: { frame: Frame }) {
       return;
     }
     try {
+      // 帶入角色:prompt 裡的 @引用 ∪ 手動選角(與分鏡編輯器、批次生圖行為一致)
+      const { prompt: composedPrompt, referenceImages } =
+        await composeCastPrompt(imagePrompt, allAssets, frame.castIds ?? []);
+
       const result = await generateMutation.mutateAsync({
-        prompt: imagePrompt,
+        prompt: composedPrompt,
         model: "gemini-2.5-flash-image",
         imageSize: "16:9",
+        referenceImages: referenceImages.length ? referenceImages : undefined,
       });
       await save(result.base64);
       updateFrame(frame.id, { imageBase64Key: `image-${frame.id}` });

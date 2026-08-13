@@ -19,7 +19,7 @@ import { useProjectStore } from "@/stores/use-project-store";
 import { useCharacterAssetStore } from "@/stores/use-character-asset-store";
 import { modelOptions, imageSizeOptions } from "@/lib/seedance-options";
 import { buildFrameGridPrompt } from "@/lib/storyboard-prompt";
-import { resolveCast } from "@/lib/cast";
+import { composeCastPrompt } from "@/lib/cast";
 import type { GenerateImageInput } from "@/actions/generate-image";
 
 interface ImageGeneratorProps {
@@ -31,7 +31,7 @@ export function ImageGenerator({ frameId }: ImageGeneratorProps) {
   const updateFrame = useFrameStore((s) => s.updateFrame);
   const project = useProjectStore((s) => frame ? s.getProject(frame.projectId) : undefined);
   const characters = project?.characters ?? [];
-  const getAssets = useCharacterAssetStore((s) => s.getAssets);
+  const allAssets = useCharacterAssetStore((s) => s.assets);
   const { imageData, isLoading: isLoadingImage, save, remove } = useImageStorage(frameId);
   const generateMutation = useGenerateImage();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -46,12 +46,9 @@ export function ImageGenerator({ frameId }: ImageGeneratorProps) {
     }
 
     try {
-      // 帶入選角:外觀文字 + 參考圖,維持角色一致性
-      const cast = getAssets(frame.castIds ?? []);
-      const { promptPrefix, referenceImages } = await resolveCast(cast);
-      const composedPrompt = promptPrefix
-        ? `${promptPrefix}\n\n${frame.prompt}`
-        : frame.prompt;
+      // 帶入角色:prompt 裡的 @引用 ∪ 手動選角,展開成參考圖 + 外觀文字
+      const { prompt: composedPrompt, referenceImages } =
+        await composeCastPrompt(frame.prompt, allAssets, frame.castIds ?? []);
 
       const result = await generateMutation.mutateAsync({
         prompt: composedPrompt,

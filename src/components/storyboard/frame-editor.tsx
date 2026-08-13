@@ -115,34 +115,43 @@ export function FrameEditor() {
         }
       }}
     >
-      <SheetContent className="w-[460px] overflow-y-auto sm:max-w-[460px]">
+      <SheetContent className="w-full gap-0 sm:max-w-[min(1120px,94vw)]">
         {frame && (
           <>
-            <SheetHeader>
-              <div className="flex items-center justify-between">
+            {/* 標題與操作固定在頂部,儲存不必滾到底部才按得到 */}
+            <SheetHeader className="shrink-0 border-b pr-12">
+              <div className="flex items-center justify-between gap-3">
                 <SheetTitle>分鏡 #{frame.order + 1}</SheetTitle>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleDelete}
-                >
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button size="sm" onClick={form.handleSubmit(onSubmit)}>
+                    儲存變更
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={handleDelete}>
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
               </div>
             </SheetHeader>
 
-            <div className="mt-6 space-y-6">
-              <ImageGenerator frameId={frame.id} />
+            {/* 左欄放視覺(圖/影片),右欄放編輯欄位,避免兩個空預覽框把表單壓到看不見。
+                用 container query 而非視窗 breakpoint:面板嵌在窄的預覽 pane 裡時,
+                看的是面板自己的寬度,不是整個視窗。 */}
+            <div className="@container flex-1 overflow-y-auto p-6">
+              <div className="grid gap-6 @2xl:grid-cols-2">
+                {/* 單欄時限寬,否則 aspect-video 預覽框會跟著容器寬度長到 400px 高 */}
+                <div className="max-w-[560px] space-y-4 @2xl:max-w-none">
+                  <ImageGenerator frameId={frame.id} />
+                  <VideoPanel frameId={frame.id} />
+                </div>
 
-              <CastPicker frameId={frame.id} />
+                <div className="space-y-4">
+                  <CastPicker frameId={frame.id} />
 
-              <VideoPanel frameId={frame.id} />
-
-              <Form {...form}>
-                <form
-                  onSubmit={form.handleSubmit(onSubmit)}
-                  className="space-y-4"
-                >
+                  <Form {...form}>
+                    <form
+                      onSubmit={form.handleSubmit(onSubmit)}
+                      className="space-y-4"
+                    >
                   <FormField
                     control={form.control}
                     name="prompt"
@@ -151,8 +160,8 @@ export function FrameEditor() {
                         <FormLabel>場景描述</FormLabel>
                         <FormControl>
                           <Textarea
-                            placeholder="描述這個場景的畫面..."
-                            rows={3}
+                            placeholder="描述這個場景的畫面...（可用 @角色名 引用上方的人物資產）"
+                            rows={8}
                             {...field}
                           />
                         </FormControl>
@@ -291,17 +300,19 @@ export function FrameEditor() {
                     )}
                   />
 
-                  <Button type="submit" className="w-full">
-                    儲存變更
-                  </Button>
-                </form>
-              </Form>
+                    </form>
+                  </Form>
 
-              <div className="rounded-lg border bg-muted/50 p-3">
-                <p className="mb-1 text-xs font-medium text-muted-foreground">
-                  Veo 3 提示詞預覽
-                </p>
-                <p className="text-sm leading-relaxed">{veoPreview}</p>
+                  {/* 預覽是唯讀參考,收起來不佔位 */}
+                  <details className="rounded-lg border bg-muted/50">
+                    <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-muted-foreground">
+                      Veo 3 提示詞預覽
+                    </summary>
+                    <p className="border-t px-3 py-2 text-sm leading-relaxed">
+                      {veoPreview}
+                    </p>
+                  </details>
+                </div>
               </div>
             </div>
           </>

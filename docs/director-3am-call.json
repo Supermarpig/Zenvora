@@ -1,0 +1,174 @@
+{
+  "project": {
+    "title": "凌晨三點的電話",
+    "aspectRatio": "9:16",
+    "fps": 30,
+    "totalDurationMs": 50000,
+    "styleBible": "Warm domestic realism with an undercurrent of unease. Tungsten/amber interior key light set against cool blue night exteriors — never fully cold, never fully safe. 35mm, shallow depth of field, subtle film grain. The horror is not in the dark; it is in how gently the light falls on something that is wrong."
+  },
+  "characters": [
+    {
+      "id": "daughter",
+      "name": "女兒",
+      "appearance": "Taiwanese woman, early 30s, shoulder-length black hair slightly messy, no makeup, tired eyes, oversized grey knit sweater",
+      "refImage": null
+    },
+    {
+      "id": "mother",
+      "name": "母親",
+      "appearance": "Taiwanese woman, late 60s, short white-grey hair, thin-framed glasses, navy blue apron over a beige cardigan, slightly stooped posture",
+      "refImage": null
+    }
+  ],
+  "scenes": [
+    { "id": "s1", "heading": "女兒的房間 · 凌晨 03:07", "order": 0 },
+    { "id": "s2", "heading": "深夜街道 · 趕路", "order": 1 },
+    { "id": "s3", "heading": "母親家門外 · 門沒關", "order": 2 },
+    { "id": "s4", "heading": "母親家廚房 · 揭示", "order": 3 }
+  ],
+  "shots": [
+    {
+      "shotNo": "1A", "sceneId": "s1", "order": 0,
+      "shotSize": "ECU", "cameraAngle": "high",
+      "cameraMove": "static", "moveReason": null,
+      "composition": ["centered", "negative-space"],
+      "action": "全黑中,床頭櫃上的手機螢幕亮起。它是畫面唯一的光源。",
+      "dialogue": [],
+      "caption": "03:07",
+      "characterRefs": [],
+      "mood": { "keyLevel": "low", "tone": "cool", "moodTag": "不安" },
+      "durationMs": 5000, "motionIntensity": "still",
+      "transitionOut": { "type": "cut" },
+      "imagePrompt": "Extreme close-up of a smartphone lying face-up on a worn wooden nightstand in total darkness, screen suddenly lit with an incoming call, the cold white screen glow the only light source in the frame spilling across the wood grain, everything beyond falling into deep black, shallow depth of field, 35mm, subtle film grain, quiet dread"
+    },
+    {
+      "shotNo": "1B", "sceneId": "s1", "order": 1,
+      "shotSize": "CU", "cameraAngle": "eye-level",
+      "cameraMove": "static", "moveReason": null,
+      "composition": ["rule-of-thirds"],
+      "action": "女兒睜眼,沒有動。手機的光從下方打上她的臉。",
+      "dialogue": [{ "speaker": "母親（電話）", "line": "你吃飽了嗎？" }],
+      "characterRefs": ["daughter"],
+      "mood": { "keyLevel": "low", "tone": "cool", "moodTag": "警覺" },
+      "durationMs": 5000, "motionIntensity": "micro",
+      "transitionOut": { "type": "match-cut", "note": "螢幕冷光 → 街上暖橘路燈,同位置光斑接" },
+      "imagePrompt": "Close-up of a Taiwanese woman in her early 30s lying in bed in a dark bedroom, eyes just opened and fixed on something off-frame, cold white phone-screen light raking up across her face from below, hard edge light along one cheekbone while the rest of her falls into shadow, messy shoulder-length black hair spread on the pillow, shallow depth of field, 35mm, cinematic"
+    },
+    {
+      "shotNo": "2A", "sceneId": "s2", "order": 2,
+      "shotSize": "LS", "cameraAngle": "high",
+      "cameraMove": "pan-right", "moveReason": "讓視線跟著車尾燈走,把觀眾交給那條路",
+      "composition": ["leading-lines", "depth-of-field"],
+      "action": "空無一人的巷子。一台車的尾燈遠去。整排窗戶都暗著,只有一扇是暖黃的。",
+      "dialogue": [],
+      "characterRefs": [],
+      "mood": { "keyLevel": "low", "tone": "cool-warm-split", "moodTag": "孤寂" },
+      "durationMs": 5000, "motionIntensity": "full",
+      "transitionOut": { "type": "cut" },
+      "imagePrompt": "Wide shot of an empty residential Taiwanese back street at 3am seen from slightly above, warm orange sodium streetlights pooling on wet asphalt against a deep cold blue night sky, a single car's tail lights receding into the distance, low-rise apartment buildings with dark windows, exactly one window glowing warm yellow, cinematic, shallow depth of field, subtle grain"
+    },
+    {
+      "shotNo": "3A", "sceneId": "s3", "order": 3,
+      "shotSize": "MS", "cameraAngle": "eye-level",
+      "cameraMove": "dolly-in", "moveReason": "不給觀眾選擇,把他們推向那道門縫",
+      "composition": ["centered", "foreground-frame"],
+      "action": "昏暗的走廊。母親家的門沒關緊,一道暖光從門縫切在冷灰地磚上。",
+      "dialogue": [],
+      "characterRefs": [],
+      "mood": { "keyLevel": "low", "tone": "warm-in-cool", "moodTag": "懸置" },
+      "durationMs": 5000, "motionIntensity": "full",
+      "transitionOut": { "type": "cut" },
+      "imagePrompt": "Medium shot of a slightly ajar apartment door in a dim concrete corridor at night, a hard blade of warm amber light spilling from the door gap across cold grey floor tiles, darkness pressing in from all edges of the frame, absolute stillness, low-key lighting, 35mm, cinematic, shallow depth of field"
+    },
+    {
+      "shotNo": "3B", "sceneId": "s3", "order": 4,
+      "shotSize": "ECU", "cameraAngle": "eye-level",
+      "cameraMove": "static", "moveReason": null,
+      "composition": ["centered", "shallow-focus"],
+      "action": "手停在門把前,沒有碰下去。停了一拍。",
+      "dialogue": [],
+      "characterRefs": ["daughter"],
+      "mood": { "keyLevel": "low", "tone": "warm", "moodTag": "遲疑" },
+      "durationMs": 5000, "motionIntensity": "micro",
+      "transitionOut": { "type": "cut" },
+      "imagePrompt": "Extreme close-up of a woman's hand hovering just short of a worn brass door handle, warm amber light from the door gap catching the edges of her knuckles as rim light, skin separated from a near-black background, visible hesitation in the tension of the fingers, very shallow depth of field, 35mm, cinematic"
+    },
+    {
+      "shotNo": "4A", "sceneId": "s4", "order": 5,
+      "shotSize": "LS", "cameraAngle": "eye-level",
+      "cameraMove": "static", "moveReason": null,
+      "composition": ["foreground-frame", "depth-of-field"],
+      "action": "廚房。母親背對鏡頭站在爐前,鍋子冒著蒸氣。一切溫暖得不對。",
+      "dialogue": [{ "speaker": "母親", "line": "快來，飯要涼了。" }],
+      "characterRefs": ["mother"],
+      "mood": { "keyLevel": "high", "tone": "warm", "moodTag": "治癒（錯位）" },
+      "durationMs": 5000, "motionIntensity": "micro",
+      "transitionOut": { "type": "cut" },
+      "imagePrompt": "Wide shot from a doorway into a small warm Taiwanese home kitchen at night, an elderly woman in a navy apron standing with her back to camera at the stove, steam rising and diffusing the warm tungsten ceiling light into a soft halo, worn tiled walls, a small wooden dining table in the foreground, deeply comforting and quietly wrong at the same time, cinematic, shallow depth of field"
+    },
+    {
+      "shotNo": "4B", "sceneId": "s4", "order": 6,
+      "shotSize": "CU", "cameraAngle": "high",
+      "cameraMove": "static", "moveReason": null,
+      "composition": ["symmetry", "centered"],
+      "action": "桌上兩副碗筷,擺得一絲不苟。兩碗都冒著熱氣。",
+      "dialogue": [],
+      "characterRefs": [],
+      "mood": { "keyLevel": "high", "tone": "warm", "moodTag": "第一個裂縫" },
+      "durationMs": 5000, "motionIntensity": "still",
+      "transitionOut": { "type": "cut" },
+      "imagePrompt": "Close-up looking down at a small wooden dining table, two bowls of rice and two pairs of chopsticks laid out with careful precision, steam rising from both bowls, warm tungsten light from directly above, one pair of chopsticks perfectly aligned and clearly untouched, soft shadows, shallow depth of field, cinematic, melancholy in the symmetry"
+    },
+    {
+      "shotNo": "4C", "sceneId": "s4", "order": 7,
+      "shotSize": "ECU", "cameraAngle": "eye-level",
+      "cameraMove": "dolly-in", "moveReason": "推得夠慢,讓觀眾自己讀到那個日期,不用旁白講",
+      "composition": ["shallow-focus", "rule-of-thirds"],
+      "action": "牆上日曆,紙頁泛黃。旁邊一張全家福,照片裡有父親。",
+      "dialogue": [],
+      "characterRefs": [],
+      "mood": { "keyLevel": "low", "tone": "warm", "moodTag": "揭示" },
+      "durationMs": 5000, "motionIntensity": "full",
+      "transitionOut": { "type": "cut" },
+      "imagePrompt": "Extreme close-up of a paper wall calendar in warm dim light, its page yellowed and curling with age, beside it a small framed family photograph of a middle-aged man, a woman, and a young girl, the frame's glass catching one soft highlight, dust suspended in the warm air, very shallow depth of field, quiet revelation, cinematic"
+    },
+    {
+      "shotNo": "4D", "sceneId": "s4", "order": 8,
+      "shotSize": "MCU", "cameraAngle": "eye-level",
+      "cameraMove": "static", "moveReason": null,
+      "composition": ["rule-of-thirds", "foreground-frame"],
+      "action": "女兒站在廚房門口,眼睛紅了,但嘴角在鬆開。她決定不糾正母親。",
+      "dialogue": [],
+      "characterRefs": ["daughter"],
+      "mood": { "keyLevel": "high", "tone": "warm", "moodTag": "理解" },
+      "durationMs": 5000, "motionIntensity": "micro",
+      "transitionOut": { "type": "dissolve", "note": "溶接,讓時間軟化,別用硬切打斷情緒" },
+      "imagePrompt": "Medium close-up of a Taiwanese woman in her early 30s standing in a kitchen doorway, warm tungsten light from inside the room catching one side of her face, eyes wet and rimmed red while her mouth is just beginning to soften into a smile, oversized grey knit sweater, dark corridor behind her, extreme emotional restraint, very shallow depth of field, cinematic"
+    },
+    {
+      "shotNo": "5A", "sceneId": "s4", "order": 9,
+      "shotSize": "MS", "cameraAngle": "eye-level",
+      "cameraMove": "dolly-out", "moveReason": "拉開、留白,把觀眾請回門外,不打擾她們",
+      "composition": ["negative-space", "depth-of-field"],
+      "action": "兩人坐在桌邊。母親伸手替女兒夾菜。鏡頭緩慢後拉,門框重新進入畫面。",
+      "dialogue": [{ "speaker": "女兒", "line": "嗯，很好吃。" }],
+      "characterRefs": ["daughter", "mother"],
+      "mood": { "keyLevel": "high", "tone": "warm", "moodTag": "溫暖（餘燼）" },
+      "durationMs": 5000, "motionIntensity": "full",
+      "transitionOut": { "type": "fade-out" },
+      "imagePrompt": "Medium wide shot of a small warm kitchen at night, an elderly woman in a navy apron reaching across a wooden table to place food into a younger woman's bowl, both seated facing each other, steam drifting between them, warm tungsten glow filling the room, a dark doorway visible at the edge of frame, tender and quietly heartbreaking, cinematic, shallow depth of field, subtle film grain"
+    }
+  ],
+  "zenvoraFrames": [
+    { "order": 0, "prompt": "Extreme close-up of a smartphone lying face-up on a worn wooden nightstand in total darkness, screen suddenly lit with an incoming call, the cold white screen glow the only light source in the frame spilling across the wood grain, everything beyond falling into deep black, shallow depth of field, 35mm, subtle film grain, quiet dread", "dialogue": "", "speaker": "", "cameraMovement": "Fixed", "duration": 5, "style": "Cinematic", "mood": "Moody/Dramatic" },
+    { "order": 1, "prompt": "Close-up of a Taiwanese woman in her early 30s lying in bed in a dark bedroom, eyes just opened and fixed on something off-frame, cold white phone-screen light raking up across her face from below, hard edge light along one cheekbone while the rest of her falls into shadow, messy shoulder-length black hair spread on the pillow, shallow depth of field, 35mm, cinematic", "dialogue": "你吃飽了嗎？", "speaker": "母親（電話）", "cameraMovement": "Fixed", "duration": 5, "style": "Cinematic", "mood": "Moody/Dramatic" },
+    { "order": 2, "prompt": "Wide shot of an empty residential Taiwanese back street at 3am seen from slightly above, warm orange sodium streetlights pooling on wet asphalt against a deep cold blue night sky, a single car's tail lights receding into the distance, low-rise apartment buildings with dark windows, exactly one window glowing warm yellow, cinematic, shallow depth of field, subtle grain", "dialogue": "", "speaker": "", "cameraMovement": "Pan Right", "duration": 5, "style": "Cinematic", "mood": "Cold/Blue Tone" },
+    { "order": 3, "prompt": "Medium shot of a slightly ajar apartment door in a dim concrete corridor at night, a hard blade of warm amber light spilling from the door gap across cold grey floor tiles, darkness pressing in from all edges of the frame, absolute stillness, low-key lighting, 35mm, cinematic, shallow depth of field", "dialogue": "", "speaker": "", "cameraMovement": "Zoom In", "duration": 5, "style": "Cinematic", "mood": "Warm/Golden Hour" },
+    { "order": 4, "prompt": "Extreme close-up of a woman's hand hovering just short of a worn brass door handle, warm amber light from the door gap catching the edges of her knuckles as rim light, skin separated from a near-black background, visible hesitation in the tension of the fingers, very shallow depth of field, 35mm, cinematic", "dialogue": "", "speaker": "", "cameraMovement": "Fixed", "duration": 5, "style": "Cinematic", "mood": "Warm/Golden Hour" },
+    { "order": 5, "prompt": "Wide shot from a doorway into a small warm Taiwanese home kitchen at night, an elderly woman in a navy apron standing with her back to camera at the stove, steam rising and diffusing the warm tungsten ceiling light into a soft halo, worn tiled walls, a small wooden dining table in the foreground, deeply comforting and quietly wrong at the same time, cinematic, shallow depth of field", "dialogue": "快來，飯要涼了。", "speaker": "母親", "cameraMovement": "Fixed", "duration": 5, "style": "Cinematic", "mood": "Warm/Golden Hour" },
+    { "order": 6, "prompt": "Close-up looking down at a small wooden dining table, two bowls of rice and two pairs of chopsticks laid out with careful precision, steam rising from both bowls, warm tungsten light from directly above, one pair of chopsticks perfectly aligned and clearly untouched, soft shadows, shallow depth of field, cinematic, melancholy in the symmetry", "dialogue": "", "speaker": "", "cameraMovement": "Fixed", "duration": 5, "style": "Cinematic", "mood": "Warm/Golden Hour" },
+    { "order": 7, "prompt": "Extreme close-up of a paper wall calendar in warm dim light, its page yellowed and curling with age, beside it a small framed family photograph of a middle-aged man, a woman, and a young girl, the frame's glass catching one soft highlight, dust suspended in the warm air, very shallow depth of field, quiet revelation, cinematic", "dialogue": "", "speaker": "", "cameraMovement": "Zoom In", "duration": 5, "style": "Cinematic", "mood": "Moody/Dramatic" },
+    { "order": 8, "prompt": "Medium close-up of a Taiwanese woman in her early 30s standing in a kitchen doorway, warm tungsten light from inside the room catching one side of her face, eyes wet and rimmed red while her mouth is just beginning to soften into a smile, oversized grey knit sweater, dark corridor behind her, extreme emotional restraint, very shallow depth of field, cinematic", "dialogue": "", "speaker": "", "cameraMovement": "Fixed", "duration": 5, "style": "Cinematic", "mood": "Warm/Golden Hour" },
+    { "order": 9, "prompt": "Medium wide shot of a small warm kitchen at night, an elderly woman in a navy apron reaching across a wooden table to place food into a younger woman's bowl, both seated facing each other, steam drifting between them, warm tungsten glow filling the room, a dark doorway visible at the edge of frame, tender and quietly heartbreaking, cinematic, shallow depth of field, subtle film grain", "dialogue": "嗯，很好吃。", "speaker": "女兒", "cameraMovement": "Zoom Out", "duration": 5, "style": "Cinematic", "mood": "Warm/Golden Hour" }
+  ]
+}
