@@ -994,10 +994,22 @@ const STYLE_LENS: Record<string, { verbose: string; compact: string }>
 
 ### N7 全自動計畫預審(小 · 弱依賴 N2)
 
-- [ ] 純程式規則檢查:空白 prompt / 缺資產 / 總長偏離 / 預估花費
-- [ ] AI 語意檢查:連戲 / 節奏 / prompt 品質
-- [ ] `planReviewSchema` + 問題清單 UI
-- [ ] 驗收:程式規則在無 API 額度下可跑;`blocker` 不阻擋硬要生成
+**2026-08-13 完成純程式規則與 UI;AI 語意檢查未做。**
+
+- [x] ~~純程式規則檢查~~ —— `src/lib/plan-review.ts`,七類規則:空白描述(blocker)、資訊量過低、`@` 了不存在的資產(blocker)、重複描述、含中文、描述要求畫面出現文字(與 no-text 指示衝突)、總長偏離短影音區間、無對白、成本估算
+- [x] ~~問題清單 UI~~ —— 工具列「計畫預審」對話框,依 blocker / warning / hint 分組,附成本統計列。**用 TypeScript interface 而非 zod schema** —— 這是內部計算結果,不是需要驗證的外部輸入,加 zod 只是多一層無用的執行期檢查
+- [x] ~~驗收~~ —— 純程式規則完全不需 API(32 個單元測試涵蓋);`blocker` 只標示不阻擋生成
+- [x] ~~缺失資產掃描~~ —— `findMissingMentions()`(spec §5.6),連帶把 `cast.ts` 的純函式拆成 `mention.ts`(原本頂層 import idb-keyval 導致無法測試,見 §16 D6)
+- [ ] **AI 語意檢查未做** —— 連戲、跳軸、prompt 品質需要 server action + prompt 設計。文字模型有免費額度所以技術上可行,但純程式規則已覆蓋大部分實際問題,這部分留待有需要時再加
+
+**實作時修掉兩個自己造成的誤報**(驗證時發現,已補上迴歸測試):
+
+1. `@管家 polishing a silver tray` 被判「描述含中文」—— 角色名本來就常是中文。改成檢查前先剝除 `@` 引用。
+2. 14 個中文字的描述被判「過短」—— 中文資訊密度高於英文,不能用同一個字數閾值。改用加權後的 `informationLength()`。
+
+誤報比漏報更傷:使用者被誤報幾次就不會再看這份清單。
+
+**設計決定**:`reviewPlan()` 的單價由呼叫方查表傳入,而非在模組內 `import credits / video`。這讓它不依賴任何 provider 或瀏覽器程式碼,才能在 Node 下單元測試。
 
 ### N3 Prompt 管理(中 · 弱依賴 N2)
 

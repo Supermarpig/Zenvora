@@ -31,12 +31,12 @@ Next.js 16 + React 19 + Zustand + shadcn/ui。**純前端,無後端資料庫** �
 pnpm install               # node_modules 可能不存在
 npx tsc --noEmit           # 必須全綠(含 tests/)
 npx eslint src/ tests/     # 不可新增 error/warning
-pnpm test                  # 16 個單元測試,必須全過
+pnpm test                  # 32 個單元測試,必須全過
 ```
 
-測試用 Node 內建 `node:test` + `--experimental-strip-types`(需 Node 22+),**沒有裝 vitest 或任何測試框架**。目前涵蓋 `src/lib/zip.ts` 與 `src/lib/timeline-export.ts` —— 這兩個是純函式且零瀏覽器 API 依賴。`grid-split.ts`(需 canvas)與 `cast.ts`(頂層 import idb-keyval)還測不到,要測得先做結構調整。
+測試用 Node 內建 `node:test` + `--experimental-strip-types`(需 Node 22+),**沒有裝 vitest 或任何測試框架**。目前涵蓋 `zip.ts`、`timeline-export.ts`、`plan-review.ts`、`mention.ts`。`grid-split.ts` 需要 canvas 所以測不到。
 
-因為 Node ESM 要求 import 帶 `.ts` 副檔名,`tsconfig.json` 開了 `allowImportingTsExtensions`。
+要讓一個模組可測,它不能在頂層 import 碰瀏覽器 API 的東西 —— `cast.ts` 原本頂層 import idb-keyval,所以純函式被拆到 `mention.ts`;`plan-review.ts` 的單價改由呼叫方傳入,而非自己 import `credits` / `video`。**被 tests/ 直接或間接 import 的模組,其 value import 需帶 `.ts` 副檔名**(Node ESM 要求),`plan-review.ts` 第 4 行就是這個原因 —— `tsconfig.json` 為此開了 `allowImportingTsExtensions`。
 
 dev server 用 `preview_start` 的 `frameforge-dev`(`.claude/launch.json`,port 3000),**不要用 Bash 跑**。UI 改動必須用 preview 截圖驗證,不要只靠 tsc 通過就宣稱完成。
 
@@ -56,7 +56,7 @@ dev server 用 `preview_start` 的 `frameforge-dev`(`.claude/launch.json`,port 3
 
 **兩個踩過的坑**:
 
-1. `/project/[id]/page.tsx` 是 client component,`getProject(id)` 找不到就 `notFound()`。zustand persist 的 rehydration 是異步的,**硬導航會 404** —— 要從首頁用 client 端導航(點連結)進去。
+1. `/project/[id]` 與其 `/prompts` 是 client component,而 zustand persist 的 rehydration 是異步的。兩者都用 `useProjectStoreHydrated()` 等 hydration 完成後才判斷 404 —— **不要把判斷改回首次 render 就做**,那會讓直接開專案 URL 全部 404(技術債 D5 修的就是這個)。現在硬導航是正常的。
 2. 頁面活著時 zustand 會把記憶體狀態寫回 localStorage,**直接 `setItem` 可能被覆蓋**。改完要 reload,或改用 UI 操作。
 
 **驗證完務必清乾淨**(localStorage + IndexedDB),不要把測試分鏡留在使用者的專案裡。
@@ -76,5 +76,5 @@ dev server 用 `preview_start` 的 `frameforge-dev`(`.claude/launch.json`,port 3
 - **`src/lib/style-tables.ts` 是 style/mood 鏡頭語言的唯一來源**,`verbose` 給單鏡與影片、`compact` 給宮格。措辭改動會讓既有專案重生的圖跟舊圖不一致,別隨手改。
 - `frame-editor` 與 `prompt-row` 都是 **debounce 自動存**。`frame-editor` 的兩個 effect 依賴刻意避開 `frame` 物件(用 `selectedFrameId` 與序列化字串),否則會形成「存→新物件→reset→再存」的循環。
 - `frameSchema` 的 `video*` 欄位是**結果**,`use-job-store` 是**任務**,兩者都 persist。`videoStatus` 與 `VideoJob.status` 有值域重疊,更新時要同步兩邊。
-- `@角色名` 引用(`src/lib/cast.ts`)只認得既有資產名稱,不用 regex 猜邊界;未知的 `@xxx` 原樣保留。角色來源是「`@` 引用 ∪ `castIds` 手動選角」,`@` 決定參考圖編號順序。
+- `@角色名` 引用的解析在 `src/lib/mention.ts`(純函式,可測),`cast.ts` re-export 並負責讀參考圖。只認得既有資產名稱,不用 regex 猜邊界;未知的 `@xxx` 原樣保留。角色來源是「`@` 引用 ∪ `castIds` 手動選角」,`@` 決定參考圖編號順序。
 - 九宮格有兩種語意:`buildFrameGridPrompt` 是**單一分鏡的九種鏡位**(挑鏡用);多 frames 的 `buildGridPrompt` 是**九個不同分鏡各一格**(省成本用,對應「連續九宮格」工具)。
