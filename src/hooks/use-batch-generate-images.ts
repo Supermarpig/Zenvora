@@ -4,6 +4,7 @@ import { useState } from "react";
 import { generateImage, type GenerateImageInput } from "@/actions/generate-image";
 import { saveImage } from "@/lib/db";
 import { composeCastPrompt } from "@/lib/cast";
+import { buildImagePrompt } from "@/lib/veo-prompt";
 import { useFrameStore } from "@/stores/use-frame-store";
 import { useCharacterAssetStore } from "@/stores/use-character-asset-store";
 
@@ -48,8 +49,9 @@ export function useBatchGenerateImages(projectId: string) {
 
     for (const f of frames) {
       try {
+        // 與分鏡編輯器、提示詞總表走同一條組句路徑(buildImagePrompt)
         const { prompt, referenceImages } = await composeCastPrompt(
-          f.prompt,
+          buildImagePrompt(f),
           allAssets,
           f.castIds ?? []
         );

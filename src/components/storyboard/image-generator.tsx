@@ -20,6 +20,7 @@ import { useCharacterAssetStore } from "@/stores/use-character-asset-store";
 import { modelOptions, imageSizeOptions } from "@/lib/seedance-options";
 import { buildFrameGridPrompt } from "@/lib/storyboard-prompt";
 import { composeCastPrompt } from "@/lib/cast";
+import { buildImagePrompt } from "@/lib/veo-prompt";
 import type { GenerateImageInput } from "@/actions/generate-image";
 
 interface ImageGeneratorProps {
@@ -46,9 +47,14 @@ export function ImageGenerator({ frameId }: ImageGeneratorProps) {
     }
 
     try {
-      // 帶入角色:prompt 裡的 @引用 ∪ 手動選角,展開成參考圖 + 外觀文字
+      // buildImagePrompt 補上鏡頭語言、打光與 no-text 指示;三個生圖入口一律走同一條,
+      // 否則同一個分鏡從不同入口生出來的圖風格會不一致
       const { prompt: composedPrompt, referenceImages } =
-        await composeCastPrompt(frame.prompt, allAssets, frame.castIds ?? []);
+        await composeCastPrompt(
+          buildImagePrompt(frame),
+          allAssets,
+          frame.castIds ?? []
+        );
 
       const result = await generateMutation.mutateAsync({
         prompt: composedPrompt,
