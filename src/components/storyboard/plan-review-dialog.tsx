@@ -1,0 +1,163 @@
+"use client";
+
+import { useState } from "react";
+import {
+  ClipboardCheck,
+  CircleAlert,
+  TriangleAlert,
+  Info,
+  CircleCheck,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useFrameStore } from "@/stores/use-frame-store";
+import { useCharacterAssetStore } from "@/stores/use-character-asset-store";
+import { useModelConfigStore } from "@/stores/use-model-config-store";
+import { MODEL_CREDIT_COST } from "@/lib/credits";
+import { getModelOption } from "@/lib/video";
+import { resolveImageModel, resolveVideoModel } from "@/lib/model-config";
+import { reviewPlan, type PlanReview, type IssueSeverity } from "@/lib/plan-review";
+
+const SEVERITY_META: Record<
+  IssueSeverity,
+  { label: string; icon: typeof CircleAlert; className: string }
+> = {
+  blocker: {
+    label: "必須處理",
+    icon: CircleAlert,
+    className: "text-destructive",
+  },
+  warning: {
+    label: "建議檢查",
+    icon: TriangleAlert,
+    className: "text-amber-600 dark:text-amber-500",
+  },
+  hint: { label: "提醒", icon: Info, className: "text-muted-foreground" },
+};
+
+/**
+ * 生成前的計畫預審。
+ *
+ * 存在的理由是成本:生圖免費層 limit 0、影片沒有免費層,每次生成都要錢。
+ * 在按下「批次生圖」之前先掃一遍,比事後發現第 7 鏡是空的便宜太多。
+ *
+ * 刻意只做建議、不阻擋 —— 有 blocker 也讓使用者自己決定要不要照樣生成。
+ */
+export function PlanReviewDialog({ projectId }: { projectId: string }) {
+  const [open, setOpen] = useState(false);
+  const [review, setReview] = useState<PlanReview | null>(null);
+
+  const getFramesByProject = useFrameStore((s) => s.getFramesByProject);
+  const assets = useCharacterAssetStore((s) => s.assets);
+  const imageModelOverride = useModelConfigStore((s) => s.imageModel);
+  const videoModelOverride = useModelConfigStore((s) => s.videoModel);
+
+  function handleOpen() {
+    const imageModel = resolveImageModel(imageModelOverride);
+    const videoModel = resolveVideoModel(videoModelOverride);
+
+    // 單價在這裡查表後傳入,plan-review 本身保持純函式(才能單元測試)
+    setReview(
+      reviewPlan(getFramesByProject(projectId), assets, {
+        imageUnitCredits: MODEL_CREDIT_COST[imageModel] ?? 2,
+        videoUnitCreditsPerSec: getModelOption(videoModel)?.creditCost ?? 0,
+      })
+    );
+    setOpen(true);
+  }
+
+  const grouped = (["blocker", "warning", "hint"] as IssueSeverity[])
+    .map((severity) => ({
+      severity,
+      items: review?.issues.filter((i) => i.severity === severity) ?? [],
+    }))
+    .filter((g) => g.items.length > 0);
+
+  return (
+    <>
+      <Button variant="outline" size="sm" onClick={handleOpen}>
+        <ClipboardCheck className="mr-1.5 h-4 w-4" />
+        計畫預審
+      </Button>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>計畫預審</DialogTitle>
+            <DialogDescription>
+              生成前先掃一遍,避免把額度花在有問題的分鏡上。這裡只提出建議，不會阻擋生成。
+            </DialogDescription>
+          </DialogHeader>
+
+          {review && (
+            <div className="space-y-4 py-1">
+              <div className="grid grid-cols-3 gap-2 rounded-lg border bg-muted/30 p-3 text-center">
+                <div>
+                  <p className="text-lg font-semibold">
+                    {review.cost.framesNeedingImage}
+                  </p>
+                  <p className="text-xs text-muted-foreground">張圖待生成</p>
+                </div>
+                <div>
+                  <p className="text-lg font-semibold">
+                    {review.cost.framesNeedingVideo}
+                  </p>
+                  <p className="text-xs text-muted-foreground">支影片待生成</p>
+                </div>
+                <div>
+                  <p className="text-lg font-semibold">
+                    {review.cost.totalCredits}
+                  </p>
+                  <p className="text-xs text-muted-foreground">預估 credits</p>
+                </div>
+              </div>
+
+              {grouped.length === 0 ? (
+                <div className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 text-sm">
+                  <CircleCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-500" />
+                  沒有發現問題，全片 {review.totalDurationSec} 秒。
+                </div>
+              ) : (
+                grouped.map((group) => {
+                  const meta = SEVERITY_META[group.severity];
+                  const Icon = meta.icon;
+                  return (
+                    <div key={group.severity} className="space-y-1.5">
+                      <p
+                        className={`flex items-center gap-1.5 text-xs font-medium ${meta.className}`}
+                      >
+                        <Icon className="h-3.5 w-3.5" />
+                        {meta.label}（{group.items.length}）
+                      </p>
+                      <ul className="space-y-1.5">
+                        {group.items.map((issue, i) => (
+                          <li
+                            key={`${issue.category}-${issue.shot ?? "all"}-${i}`}
+                            className="rounded border px-3 py-2 text-sm"
+                          >
+                            <p>{issue.message}</p>
+                            {issue.suggestion && (
+                              <p className="mt-0.5 text-xs text-muted-foreground">
+                                {issue.suggestion}
+                              </p>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
