@@ -7,6 +7,8 @@ import {
   TriangleAlert,
   Info,
   CircleCheck,
+  Sparkles,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,6 +25,19 @@ import { MODEL_CREDIT_COST } from "@/lib/credits";
 import { getModelOption } from "@/lib/video";
 import { resolveImageModel, resolveVideoModel } from "@/lib/model-config";
 import { reviewPlan, type PlanReview, type IssueSeverity } from "@/lib/plan-review";
+import { toast } from "sonner";
+import {
+  reviewPlanWithAi,
+  type AiPlanIssue,
+  type AiIssueCategory,
+} from "@/actions/review-plan-ai";
+
+const AI_CATEGORY_LABELS: Record<AiIssueCategory, string> = {
+  continuity: "連戲",
+  axis: "跳軸",
+  "prompt-quality": "描述品質",
+  pacing: "節奏",
+};
 
 const SEVERITY_META: Record<
   IssueSeverity,
@@ -52,6 +67,8 @@ const SEVERITY_META: Record<
 export function PlanReviewDialog({ projectId }: { projectId: string }) {
   const [open, setOpen] = useState(false);
   const [review, setReview] = useState<PlanReview | null>(null);
+  const [aiIssues, setAiIssues] = useState<AiPlanIssue[] | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
 
   const getFramesByProject = useFrameStore((s) => s.getFramesByProject);
   const assets = useCharacterAssetStore((s) => s.assets);
@@ -63,6 +80,7 @@ export function PlanReviewDialog({ projectId }: { projectId: string }) {
     const videoModel = resolveVideoModel(videoModelOverride);
 
     // 單價在這裡查表後傳入,plan-review 本身保持純函式(才能單元測試)
+    setAiIssues(null);
     setReview(
       reviewPlan(getFramesByProject(projectId), assets, {
         imageUnitCredits: MODEL_CREDIT_COST[imageModel] ?? 2,
@@ -70,6 +88,38 @@ export function PlanReviewDialog({ projectId }: { projectId: string }) {
       })
     );
     setOpen(true);
+  }
+
+  /** AI 檢查要花 API 額度,所以按需觸發而不是開啟就跑 */
+  async function handleAiCheck() {
+    const frames = getFramesByProject(projectId);
+    if (frames.length < 2) {
+      toast.info("至少要有 2 個分鏡才能檢查連戲");
+      return;
+    }
+    setAiLoading(true);
+    const result = await reviewPlanWithAi({
+      shots: frames.map((f, i) => ({
+        shot: i + 1,
+        prompt: f.prompt,
+        dialogue: f.dialogue ?? "",
+        speaker: f.speaker ?? "",
+        camera: f.cameraMovement,
+        durationSec: f.videoDurationSec ?? f.duration,
+      })),
+    });
+    setAiLoading(false);
+
+    if (!result.success) {
+      toast.error(result.error);
+      return;
+    }
+    setAiIssues(result.issues);
+    toast.success(
+      result.issues.length === 0
+        ? "AI 沒有發現連戲或節奏問題"
+        : `AI 提出 ${result.issues.length} 項觀察`
+    );
   }
 
   const grouped = (["blocker", "warning", "hint"] as IssueSeverity[])
@@ -154,6 +204,68 @@ export function PlanReviewDialog({ projectId }: { projectId: string }) {
                   );
                 })
               )}
+
+              {/* AI 語意檢查:程式規則管不到的連戲、跳軸、描述品質 */}
+              <div className="space-y-2 border-t pt-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <p className="text-sm font-medium">AI 深度檢查</p>
+                    <p className="text-xs text-muted-foreground">
+                      連戲、跳軸、描述是否生得出東西 —— 這些程式判斷不了。用文字模型，不耗生圖額度。
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0"
+                    onClick={handleAiCheck}
+                    disabled={aiLoading}
+                  >
+                    {aiLoading ? (
+                      <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="mr-1.5 h-4 w-4" />
+                    )}
+                    {aiIssues === null ? "開始檢查" : "重新檢查"}
+                  </Button>
+                </div>
+
+                {aiIssues !== null && aiIssues.length === 0 && (
+                  <p className="rounded border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 text-sm">
+                    AI 沒有發現連戲或節奏問題。
+                  </p>
+                )}
+
+                {aiIssues !== null && aiIssues.length > 0 && (
+                  <ul className="space-y-1.5">
+                    {aiIssues.map((issue, i) => (
+                      <li
+                        key={`${issue.category}-${issue.shot ?? "all"}-${i}`}
+                        className="rounded border px-3 py-2 text-sm"
+                      >
+                        <p className="flex items-center gap-1.5">
+                          <span
+                            className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                              issue.severity === "warning"
+                                ? "bg-amber-500/15 text-amber-700 dark:text-amber-500"
+                                : "bg-muted text-muted-foreground"
+                            }`}
+                          >
+                            {AI_CATEGORY_LABELS[issue.category]}
+                          </span>
+                          {issue.shot ? `第 ${issue.shot} 鏡` : "全片"}
+                        </p>
+                        <p className="mt-0.5">{issue.message}</p>
+                        {issue.suggestion && (
+                          <p className="mt-0.5 text-xs text-muted-foreground">
+                            {issue.suggestion}
+                          </p>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
           )}
         </DialogContent>
