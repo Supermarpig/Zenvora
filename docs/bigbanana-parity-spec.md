@@ -1,6 +1,8 @@
 # BigBanana 功能對標 — 補完規格書 (Spec v0.2)
 
-> 版本:v0.3 · 建立日期:2026-08-13(v0.2 的分析僅基於單次 README 摘要,漏了 9 項功能與 4 個架構事實,已於本版補齊)
+> 版本:v0.4 · 建立日期:2026-08-13
+> v0.2 → v0.3:補齊漏掉的 9 項功能與 4 個架構事實(v0.2 僅基於單次 README 摘要)。
+> v0.3 → v0.4:新增 §16 內部技術債 D1–D9(與對標無關,是自身架構問題)。
 > 定位:承接 [`director-console-spec.md`](./director-console-spec.md) (v0.1),對標 BigBanana AI Director 的五階段工作流,把缺口拆成可執行的實作單位。
 > 對標來源:`https://github.com/shuyu-labs/BigBanana-AI-Director`
 
@@ -634,7 +636,7 @@ export const modelConfigSchema = z.object({
 
 ### 9.3 連帶要修的重複
 
-`MODEL_CREDIT_COST` 在 `generate-image.ts:36` 與 `credits.ts:3` 各存一份,今天修模型 id 時兩邊都得改。應收斂成單一來源。
+`MODEL_CREDIT_COST` 在 `generate-image.ts:35` 與 `credits.ts:3` 各存一份,今天修模型 id 時兩邊都得改。應收斂成單一來源。
 
 ### 9.4 驗收條件
 
@@ -784,7 +786,7 @@ const allowed = ALLOWED_HOST_SUFFIXES.some(
 | `src/stores/use-character-asset-store.ts` | persist `version: 1` + `migrate`(注意 `partialize`) | N2 |
 | `src/app/api/video/download/route.ts` | 主機白名單 / 協議 / 私網 / 長度 / 逾時 | N8 |
 
-**需要收斂的既有重複**:`MODEL_CREDIT_COST` 目前在 `generate-image.ts:36` 與 `credits.ts:3` 各一份(N6 §9.3)。
+**需要收斂的既有重複**:`MODEL_CREDIT_COST` 目前在 `generate-image.ts:35` 與 `credits.ts:3` 各一份(N6 §9.3)。
 
 ---
 
@@ -842,7 +844,82 @@ N8 §11.2 是安全性缺陷不是功能項,不該排在功能後面 —— 改�
 
 ---
 
-## 16. 執行進度
+## 16. 內部技術債(D1–D9)
+
+> 與對標無關,是自身架構的問題。編號用 D 以免與功能缺口 N 混淆。
+> **D0 已於 2026-08-13 修掉**:三個生圖入口的 prompt 本體不一致(分鏡編輯器與批次生圖只送 `frame.prompt`,只有提示詞總表走 `buildImagePrompt`),已統一並實測三者逐字相同。
+
+### D1 — style / mood 對照表有兩份,且內容不同
+
+```
+veo-prompt.ts:        STYLE_LENS(59)  /  MOOD_LIGHTING(40)
+storyboard-prompt.ts: LENS_STYLE(24)  /  MOOD_STYLE(5)
+```
+
+名稱幾乎互換(`STYLE_LENS` vs `LENS_STYLE`),內容各自演化過。同一個 `Cinematic`:
+
+- `veo-prompt`:`Shot on 35mm anamorphic lens with oval bokeh and horizontal flare, cinematic 2.39:1 widescreen aesthetic, shallow depth of field`
+- `storyboard-prompt`:`cinematic film quality, shot on 35mm anamorphic lens with shallow depth of field and oval bokeh`
+
+**不要盲目合併成一份**。九宮格的措辭刻意較短 —— 一張圖要塞 9 格,每格的描述若和單鏡一樣長,prompt 會失焦。正確做法是**一份資料、兩種長度**:
+
+```ts
+// 建議:單一來源,分 verbose / compact 兩個欄位
+const STYLE_LENS: Record<string, { verbose: string; compact: string }>
+```
+
+風險:合併時若不小心改動措辭,既有專案重生的圖會與舊圖風格不一致。建議連同 N3(Prompt 管理)一起做,讓使用者能看到並覆寫這兩份措辭。
+
+### D2 — `MODEL_CREDIT_COST` 有兩份
+
+`generate-image.ts:35` 與 `credits.ts:3` 各存一份。今天修 `gemini-3-pro-image-preview` 時兩邊都得改。收斂到 `credits.ts`,`generate-image.ts` 改 import。屬 **N6** 的一部分。
+
+### D3 — `imageBase64Key` 名字騙人
+
+叫 key 但**從來沒被當 key 用過**:全專案只做 truthy 判斷,實際載入一律 `loadImage(frame.id)`。九宮格切圖還在它後面加了 `#{timestamp}` 當版本號,語意更混。
+
+建議改名為 `hasImage: boolean` + 另一個 `imageVersion?: string`,語意各自清楚。**這是破壞性 schema 改動**,需要 persist migrate,建議與 N2 的資產遷移同批做,只遷一次。
+
+### D4 — `useImageStorage(frameId, revalidateKey)` 是補丁不是架構
+
+外部直接寫 IndexedDB 後,hook 無從得知要重載,只能靠呼叫端**記得**傳一個會變的字串。忘記傳就是靜默的畫面不更新 bug(這個 bug 實際發生過)。
+
+正確方向:圖片狀態納入 store,或用 module-level 的變更事件通知所有訂閱者。與 D3 相關,宜一起處理。
+
+### D5 — client component 做路由守衛,硬導航必 404
+
+`src/app/project/[id]/page.tsx` 是 client component,`getProject(id)` 找不到就 `notFound()`。zustand persist 的 rehydration 是異步的,首次 render 時 store 還是空的 —— **所以直接開 `/project/xxx` 這個 URL 一定 404**,只有從首頁點連結(client 導航)才進得去。
+
+這不只是開發時的不便,是**使用者無法把專案網址存成書籤或分享**。修法:等 rehydration 完成再判斷(`persist` 有 `onFinishHydration` / `hasHydrated`),hydration 未完成時顯示 loading 而非 `notFound()`。
+
+### D6 — 完全沒有測試
+
+`zip.ts`(手寫 ZIP 二進位格式)、`grid-split.ts`(Canvas 切圖)、`timeline-export.ts`(時間軸累加與 SRT 時間碼)、`cast.ts`(`tokenizeMentions`)全是純函式,最適合單元測試,但一個都沒有。
+
+`zip.ts` 特別值得測 —— 它手寫 local header / central directory / EOCD / CRC32,一個位移算錯就產生壞檔,而且**壞在使用者的剪映裡才會被發現**。驗證它時得另外起一個 Node HTTP receiver 才能把 blob 傳出瀏覽器用 `unzip -t` 檢查,那種驗證流程無法重複執行。
+
+建議:引入 vitest,先只測這四個純函式模組(不碰元件測試,那是另一個量級)。**這會需要新增 devDependency**,依專案慣例應先確認。
+
+### D7 — 死檔案
+
+- `src/actions/frame.ts` —— 整個檔案只有註解掉的 CRUD 簽名,是 v0.1 spec 時代「未來接 DB」的殘留。
+- `src/proxy.ts` —— `matcher` 設了 `/project/:path*` 與 `/api/:path*`,但函式只 `return NextResponse.next()`,每個 matched 請求都白跑一層(log 裡看得到 `proxy.ts: 6ms`)。
+
+兩者都留著 TODO 註解沒問題,但要意識到 `proxy.ts` 是**有執行成本的空殼**。
+
+### D8 — 編輯模式不一致
+
+`frame-editor` 是「填完按儲存變更」,`prompt-row` 是「輸入 500ms 後自動存」。同一份資料兩種心智模型,使用者會不確定改動有沒有生效。建議統一為 debounce 自動存(`prompt-row` 那套已驗證好用),儲存按鈕保留但降級為「立即存」。
+
+### D9 — 影片任務狀態有兩個家
+
+`frameSchema` 有 `videoKey` / `videoStatus` / `videoDurationSec` / `videoError`,而 `use-job-store` 也在管任務狀態。兩邊都可能是真相來源。
+
+`frameSchema` 那組是**持久化的結果**(重開瀏覽器要看得到影片),`use-job-store` 是**進行中的任務**(不需持久化)—— 這個分工其實合理,但目前沒有文件說清界線,容易寫成互相覆蓋。至少該在 schema 加註解說明各自職責。與 **N4 渲染追蹤** 相關,做那項時一併釐清。
+
+---
+
+## 17. 執行進度
 
 > 開新 session 接手時,**先讀 [`CLAUDE.md`](../CLAUDE.md)**(環境前提、配額限制、驗收慣例、測試資料注入方式),再看本章挑任務。
 > 每項完成後把 `[ ]` 改成 `[x]`,並在該 N 項的「驗收條件」逐條確認過再打勾。
@@ -857,7 +934,7 @@ N8 §11.2 是安全性缺陷不是功能項,不該排在功能後面 —— 改�
 - [ ] `modelConfigSchema` + store(**不含金鑰**)
 - [ ] 設定 UI:切換 image / text / video model
 - [ ] 自訂 model id(zod 由 enum 改為驗證非空字串)
-- [ ] 收斂 `MODEL_CREDIT_COST` 重複定義(`generate-image.ts:36` 與 `credits.ts:3`)
+- [ ] 收斂 `MODEL_CREDIT_COST` 重複定義(`generate-image.ts:35` 與 `credits.ts:3`)
 - [ ] 驗收:`localStorage` 不出現任何金鑰
 
 ### N1 鏡頭工作台(中)
@@ -923,6 +1000,19 @@ N8 §11.2 是安全性缺陷不是功能項,不該排在功能後面 —— 改�
 - [ ] URL 長度上限
 - [ ] `fetch` 逾時(`AbortSignal.timeout`)
 
+### 技術債(D1–D9,詳見 §16)
+
+- [x] ~~D0 三個生圖入口 prompt 本體不一致~~ —— 已於 2026-08-13 修掉並實測逐字相同
+- [ ] **D5** client component 路由守衛 → 直接開專案 URL 必 404,**使用者無法存書籤或分享網址**(影響使用者,建議優先)
+- [ ] **D2** `MODEL_CREDIT_COST` 兩份收斂(併入 N6)
+- [ ] **D1** style/mood 對照表兩份 → 改為單一來源 + `verbose`/`compact` 兩種長度(併入 N3)
+- [ ] **D6** 引入 vitest,測 `zip.ts` / `grid-split.ts` / `timeline-export.ts` / `cast.ts`(**需新增 devDependency,先確認**)
+- [ ] **D8** 統一編輯模式為 debounce 自動存
+- [ ] **D3** `imageBase64Key` 改名為 `hasImage` + `imageVersion`(**破壞性 schema 改動,與 N2 遷移同批做**)
+- [ ] **D4** 圖片狀態納入 store 或改用變更事件,取代 `revalidateKey` 補丁(與 D3 一起)
+- [ ] **D9** 在 schema 加註解釐清 `frameSchema` video 欄位與 `use-job-store` 的職責界線(併入 N4)
+- [ ] **D7** 清理 `actions/frame.ts` 與 `proxy.ts` 空殼(低優先,但 `proxy.ts` 有執行成本)
+
 ### 跨項與文件
 
 - [ ] `generate-storyboard` 產出直接帶 `@` 標記(§12,N2 之後最划算的小改動)
@@ -931,7 +1021,7 @@ N8 §11.2 是安全性缺陷不是功能項,不該排在功能後面 —— 改�
 
 ---
 
-## 17. 待決策
+## 18. 待決策
 
 1. **N1 的第一個 provider 選哪家?** 建議 Veo(已有 key、已有 `buildVeoPrompt`、v0.1 也是從 Veo 起手)。
 2. **`/characters` 路由要改名成 `/assets` 嗎?** 改名較貼合泛化後的語意,但要處理舊連結。
