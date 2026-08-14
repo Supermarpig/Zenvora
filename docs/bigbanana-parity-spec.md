@@ -1120,7 +1120,7 @@ const STYLE_LENS: Record<string, { verbose: string; compact: string }>
 - [ ] 試註冊火山方舟或 reseller,確認台灣帳號進不進得去(§19.6③)
 - [ ] 用網頁介面手動跑一次:驅動影片 + 角色圖 → 判定成品品質是否可用
 - [ ] 決定驅動影片的 URL 問題怎麼解(只收公開 URL / 加後端 / provider asset API,§19.6②)
-- [ ] 修既有的標籤不符:`VIDEO_MODELS` 標「Seedance 2.0」但實際打即夢 VGFM(§19.6① · **與 v2v 無關,現在就該修**)
+- [x] ~~修既有的標籤不符~~ —— 2026-08-14 完成。下拉改「即夢 2.0」,站台 description 不再宣稱產出 Seedance 提示詞,provider 與 signer 檔頭寫清楚兩者差別。**`model` id 刻意維持 `"seedance-2.0"`** —— 它被持久化在 `frame.videoModel` 與 model-config store,改了既有資料查不到選項,而 `getProviderForModel` 對未知 model 會靜默退回 veo(送錯 provider)
 - [ ] 新 provider `ark-seedance`(不是改現有那個)
 - [ ] `VideoMode` 加 `"v2v"` + `VideoModelOption.supportsDrivingVideo`
 - [ ] `frameSchema.drivingVideoUrl`(可選,舊資料不受影響)
