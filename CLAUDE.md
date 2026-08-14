@@ -51,7 +51,7 @@ dev server 用 `preview_start` 的 `frameforge-dev`(`.claude/launch.json`,port 3
 
 沒有 seed 指令,驗證功能時自行注入:
 
-- localStorage key:`frameforge-projects`、`frameforge-frames`、`frameforge-character-assets`(**version 1**,v0 資料會被 migrate 補上 `kind`)、`frameforge-model-config`、`frameforge-prompt-templates`
+- localStorage key:`frameforge-projects`、`frameforge-frames`、`frameforge-character-assets`(**version 1**,v0 資料會被 migrate 補上 `kind`)、`frameforge-episodes`(季/集,沒建立過就不存在)、`frameforge-model-config`、`frameforge-prompt-templates`
 - IndexedDB:`keyval-store` / `keyval`,key 為 `image-{frameId}`、`video-{frameId}`、`asset-{assetId}-{n}`
 
 **兩個踩過的坑**:
