@@ -9,7 +9,9 @@ export type FrameNodeData = {
   frameId: string;
   order: number;
   prompt: string;
-  imageBase64Key?: string;
+  hasImage: boolean;
+  /** 版本號改變就重讀 IndexedDB(取代先前傳整個 key 字串的做法) */
+  imageVersion: number;
   isSelected: boolean;
   hasVideo?: boolean;
   videoStatus?: "none" | "queued" | "running" | "succeeded" | "failed";
@@ -22,7 +24,7 @@ function FrameNodeComponent({ data }: NodeProps<FrameNodeType>) {
 
   useEffect(() => {
     let alive = true;
-    const p = data.imageBase64Key
+    const p = data.hasImage
       ? loadImage(data.frameId)
       : Promise.resolve<string | undefined>(undefined);
     p.then((img) => {
@@ -31,7 +33,7 @@ function FrameNodeComponent({ data }: NodeProps<FrameNodeType>) {
     return () => {
       alive = false;
     };
-  }, [data.imageBase64Key, data.frameId]);
+  }, [data.hasImage, data.imageVersion, data.frameId]);
 
   return (
     <>

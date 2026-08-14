@@ -89,7 +89,7 @@ function informationLength(text: string): number {
  * 成本用 credit 表算,不讓 AI 猜 —— 單價是已知的,程式算才準確。
  */
 export function estimateCost(frames: Frame[], pricing: Pricing): CostEstimate {
-  const needImage = frames.filter((f) => !f.imageBase64Key && f.prompt?.trim());
+  const needImage = frames.filter((f) => !f.hasImage && f.prompt?.trim());
   const needVideo = frames.filter((f) => !f.videoKey && f.prompt?.trim());
 
   // 影片單價是「每秒」指標,要乘以秒數

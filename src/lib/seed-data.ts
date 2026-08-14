@@ -26,6 +26,8 @@ export const seedFrames: Frame[] = [
     duration: 8,
     style: "Cinematic",
     mood: "Warm/Golden Hour",
+    hasImage: false,
+    imageVersion: 0,
   },
   {
     id: "frame-01b",
@@ -39,6 +41,8 @@ export const seedFrames: Frame[] = [
     duration: 8,
     style: "Cinematic",
     mood: "Warm/Golden Hour",
+    hasImage: false,
+    imageVersion: 0,
   },
 
   // ─── Scene 2: KPI (0:12-0:22) ───
@@ -54,6 +58,8 @@ export const seedFrames: Frame[] = [
     duration: 8,
     style: "Cinematic",
     mood: "Bright/Cheerful",
+    hasImage: false,
+    imageVersion: 0,
   },
   {
     id: "frame-02b",
@@ -67,6 +73,8 @@ export const seedFrames: Frame[] = [
     duration: 8,
     style: "Cinematic",
     mood: "Bright/Cheerful",
+    hasImage: false,
+    imageVersion: 0,
   },
 
   // ─── Scene 3: Romance Turbulence (0:22-0:35) ───
@@ -82,6 +90,8 @@ export const seedFrames: Frame[] = [
     duration: 8,
     style: "Cinematic",
     mood: "Soft/Dreamy",
+    hasImage: false,
+    imageVersion: 0,
   },
   {
     id: "frame-03b",
@@ -95,6 +105,8 @@ export const seedFrames: Frame[] = [
     duration: 8,
     style: "Cinematic",
     mood: "Soft/Dreamy",
+    hasImage: false,
+    imageVersion: 0,
   },
 
   // ─── Scene 4: Phone + Clapping (0:35-0:45) ───
@@ -110,6 +122,8 @@ export const seedFrames: Frame[] = [
     duration: 8,
     style: "Cinematic",
     mood: "Bright/Cheerful",
+    hasImage: false,
+    imageVersion: 0,
   },
   {
     id: "frame-04b",
@@ -123,6 +137,8 @@ export const seedFrames: Frame[] = [
     duration: 8,
     style: "Cinematic",
     mood: "Bright/Cheerful",
+    hasImage: false,
+    imageVersion: 0,
   },
 
   // ─── Scene 5: Food Area (0:45-0:57) ───
@@ -138,6 +154,8 @@ export const seedFrames: Frame[] = [
     duration: 8,
     style: "Cinematic",
     mood: "Warm/Golden Hour",
+    hasImage: false,
+    imageVersion: 0,
   },
   {
     id: "frame-05b",
@@ -151,6 +169,8 @@ export const seedFrames: Frame[] = [
     duration: 8,
     style: "Cinematic",
     mood: "Warm/Golden Hour",
+    hasImage: false,
+    imageVersion: 0,
   },
 
   // ─── Scene 6: Drinks (0:57-1:05) ───
@@ -166,6 +186,8 @@ export const seedFrames: Frame[] = [
     duration: 8,
     style: "Cinematic",
     mood: "Warm/Golden Hour",
+    hasImage: false,
+    imageVersion: 0,
   },
 
   // ─── Scene 7: Restroom (1:05-1:15) ───
@@ -181,6 +203,8 @@ export const seedFrames: Frame[] = [
     duration: 8,
     style: "Cinematic",
     mood: "Bright/Cheerful",
+    hasImage: false,
+    imageVersion: 0,
   },
   {
     id: "frame-07b",
@@ -194,6 +218,8 @@ export const seedFrames: Frame[] = [
     duration: 8,
     style: "Cinematic",
     mood: "Bright/Cheerful",
+    hasImage: false,
+    imageVersion: 0,
   },
   {
     id: "frame-07c",
@@ -207,6 +233,8 @@ export const seedFrames: Frame[] = [
     duration: 8,
     style: "Cinematic",
     mood: "Bright/Cheerful",
+    hasImage: false,
+    imageVersion: 0,
   },
 
   // ─── Scene 8: Fashion Walk (1:15-1:23) ───
@@ -222,6 +250,8 @@ export const seedFrames: Frame[] = [
     duration: 8,
     style: "Cinematic",
     mood: "Warm/Golden Hour",
+    hasImage: false,
+    imageVersion: 0,
   },
 
   // ─── Scene 9: Kahoot (1:23-1:30) ───
@@ -237,6 +267,8 @@ export const seedFrames: Frame[] = [
     duration: 8,
     style: "Cinematic",
     mood: "Bright/Cheerful",
+    hasImage: false,
+    imageVersion: 0,
   },
   {
     id: "frame-09b",
@@ -250,6 +282,8 @@ export const seedFrames: Frame[] = [
     duration: 8,
     style: "Cinematic",
     mood: "Bright/Cheerful",
+    hasImage: false,
+    imageVersion: 0,
   },
 
   // ─── Scene 10: Bingo + Special Ops + Red Envelope (1:30-1:40) ───
@@ -265,6 +299,8 @@ export const seedFrames: Frame[] = [
     duration: 8,
     style: "Cinematic",
     mood: "Bright/Cheerful",
+    hasImage: false,
+    imageVersion: 0,
   },
   {
     id: "frame-10b",
@@ -278,6 +314,8 @@ export const seedFrames: Frame[] = [
     duration: 8,
     style: "Cinematic",
     mood: "Moody/Dramatic",
+    hasImage: false,
+    imageVersion: 0,
   },
   {
     id: "frame-10c",
@@ -291,6 +329,8 @@ export const seedFrames: Frame[] = [
     duration: 8,
     style: "Cinematic",
     mood: "Neon/Glow",
+    hasImage: false,
+    imageVersion: 0,
   },
 
   // ─── Scene 11: Sunglasses Dance (1:30-1:40) ───
@@ -306,6 +346,8 @@ export const seedFrames: Frame[] = [
     duration: 8,
     style: "Cinematic",
     mood: "Moody/Dramatic",
+    hasImage: false,
+    imageVersion: 0,
   },
   {
     id: "frame-11b",
@@ -319,6 +361,8 @@ export const seedFrames: Frame[] = [
     duration: 8,
     style: "Cinematic",
     mood: "Moody/Dramatic",
+    hasImage: false,
+    imageVersion: 0,
   },
 
   // ─── Scene 12: Static Transition (1:40-1:45) ───
@@ -334,6 +378,8 @@ export const seedFrames: Frame[] = [
     duration: 5,
     style: "Cinematic",
     mood: "Dark/Horror",
+    hasImage: false,
+    imageVersion: 0,
   },
 
   // ─── Scene 13: Mayday (1:45-2:00) ───
@@ -349,6 +395,8 @@ export const seedFrames: Frame[] = [
     duration: 8,
     style: "Cinematic",
     mood: "Dark/Horror",
+    hasImage: false,
+    imageVersion: 0,
   },
   {
     id: "frame-13b",
@@ -362,6 +410,8 @@ export const seedFrames: Frame[] = [
     duration: 8,
     style: "Cinematic",
     mood: "Dark/Horror",
+    hasImage: false,
+    imageVersion: 0,
   },
 
   // ─── Scene 14: Final Shout ───
@@ -377,6 +427,8 @@ export const seedFrames: Frame[] = [
     duration: 8,
     style: "Cinematic",
     mood: "Moody/Dramatic",
+    hasImage: false,
+    imageVersion: 0,
   },
 
   // ─── Scene 15: Sam Entrance ───
@@ -392,5 +444,7 @@ export const seedFrames: Frame[] = [
     duration: 8,
     style: "Cinematic",
     mood: "Moody/Dramatic",
+    hasImage: false,
+    imageVersion: 0,
   },
 ];

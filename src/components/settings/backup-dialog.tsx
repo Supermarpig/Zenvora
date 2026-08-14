@@ -39,6 +39,7 @@ import {
   restoreRawValue,
 } from "@/lib/db";
 import type { Snapshot } from "@/lib/schemas";
+import { migrateFrames } from "@/lib/frame-migrate";
 import type { SettingsDialogProps } from "./settings-dialog-props";
 
 const ALL = "__all__";
@@ -199,9 +200,12 @@ export function BackupDialog({
       }
 
       snapshot.projects.forEach((p) => importProject(p));
-      // importFrames 依 projectId 取代該專案的分鏡,所以要逐專案呼叫
+      // importFrames 依 projectId 取代該專案的分鏡,所以要逐專案呼叫。
+      // **先過一次 migrateFrames** —— 舊備份的 JSON 存的是 imageBase64Key,
+      // 不換算的話還原後會變成「素材在 IndexedDB 但畫面說沒有圖」(技術債 D3)。
+      const migrated = migrateFrames(snapshot.frames);
       const byProject = new Map<string, typeof snapshot.frames>();
-      for (const f of snapshot.frames) {
+      for (const f of migrated) {
         const list = byProject.get(f.projectId) ?? [];
         list.push(f);
         byProject.set(f.projectId, list);

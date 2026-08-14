@@ -102,13 +102,14 @@ export function GridSequenceTools({
         spec.rows
       );
 
-      // imageBase64Key 全專案只當「有沒有圖」的標記(實際讀取都走 loadImage(frame.id)),
-      // 所以帶上版本後綴,讓依賴它的 effect 知道圖換了 —— 覆蓋既有圖時畫面才會即時更新。
+      // 這裡繞過 useImageStorage 直接寫 IndexedDB,所以要自己 bump 版本號,
+      // 否則所有讀圖的地方會停在舊畫面。同一批切圖共用一個版本號就夠了。
       const version = Date.now();
       for (const [index, frame] of targets.entries()) {
         await saveImage(frame.id, cells[index]);
         updateFrame(frame.id, {
-          imageBase64Key: `image-${frame.id}#${version}`,
+          hasImage: true,
+          imageVersion: version,
         });
       }
 

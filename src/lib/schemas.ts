@@ -220,7 +220,20 @@ export const frameSchema = z.object({
   duration: z.number().min(4).max(15).default(8),
   style: z.enum(VISUAL_STYLES).default("Cinematic"),
   mood: z.enum(MOOD_OPTIONS).default("Moody/Dramatic"),
+  /**
+   * **已棄用**(技術債 D3)。保留在 schema 裡是為了讓舊備份還原時能換算成
+   * `hasImage` / `imageVersion` —— 拿掉的話 zod 會把它剝掉,匯入舊備份就變成
+   * 「素材在 IndexedDB 但畫面說沒有圖」。換算走 `lib/frame-migrate.ts`。
+   * **新程式碼不要讀也不要寫這個欄位。**
+   */
   imageBase64Key: z.string().optional(),
+  /** 有沒有分鏡圖。實際載入一律走 `loadImage(frame.id)`,這裡只是標記 */
+  hasImage: z.boolean().default(false),
+  /**
+   * 圖片版本號。外部直接寫 IndexedDB(九宮格切圖)後 bump 它,
+   * 讓所有讀圖的地方重新載入 —— 取代先前手動傳 `revalidateKey` 的做法(D4)。
+   */
+  imageVersion: z.number().default(0),
   creditCost: z.number().optional(),
   /** 所屬集;未指定 = 直接掛在專案下(舊資料與單集專案) */
   episodeId: z.string().optional(),

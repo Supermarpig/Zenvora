@@ -1115,8 +1115,13 @@ const STYLE_LENS: Record<string, { verbose: string; compact: string }>
 - [x] ~~**D8** 統一編輯模式為 debounce 自動存~~ —— `frame-editor` 改自動存。reset 依賴只放 `selectedFrameId`、自動存依賴用序列化字串,兩處都是為了斷開「存→新 frame 物件→reset→再存」的循環。實測:打字產生 1 次寫入、靜置 3 秒 0 次額外寫入
 - [x] ~~**D9** video 欄位與 job store 職責界線~~ —— 已在 `frameSchema` 加註解。**同時更正本文件先前的誤述**(見 §16 D9)
 - [x] ~~**D7** 死檔案~~ —— 已評估:`actions/frame.ts` 確認無人 import,保留當設計備忘;`proxy.ts` 加註解標明它是 no-op 但 matcher 仍有執行成本
-- [ ] **D3** `imageBase64Key` 改名為 `hasImage` + `imageVersion` —— **刻意延後**:這是破壞性 schema 改動需要 persist migrate,單獨做會多遷一次,依 §16 建議與 N2 的資產遷移同批處理
-- [ ] **D4** 圖片狀態納入 store 或改用變更事件,取代 `revalidateKey` 補丁 —— **刻意延後**,與 D3 同批(兩者改的是同一組欄位)
+- [x] ~~**D3** `imageBase64Key` 改名為 `hasImage` + `imageVersion`~~ —— 2026-08-14 完成,與 D4 同批。
+  **遷移邏輯抽成 `lib/frame-migrate.ts` 由 store persist migrate 與備份還原共用** —— 這是關鍵:舊備份的 JSON 裡還是舊欄位,只改 store 不改還原路徑,匯入舊備份會變成「素材在 IndexedDB 但畫面說沒有圖」,那是靜默的資料遺失。`imageBase64Key` 因此**保留在 schema 裡標為棄用**(拿掉的話 zod 會把它剝掉)。
+  **寫測試時抓到自己的 bug**:原本用「有沒有 `hasImage`」判斷是否已遷移,但舊備份經過 `frameSchema.parse()` 後 zod 的 `.default(false)` 已經把它填上了 —— 那個判斷會讓圖靜默消失。改成「舊欄位有值就以它為準」,並留了一個測試專門守這條。
+  **實測**:注入 v0 資料(三格:有圖無版本 / 有圖帶版本後綴 / 沒有圖)→ persist 版本 0→1、兩張圖都在畫布上顯示、版本號 `1700000000000` 沿用、舊欄位清空
+- [x] ~~**D4** 圖片狀態納入 store,取代 `revalidateKey` 補丁~~ —— 2026-08-14 完成。
+  `useImageStorage(frameId)` 現在**自己從 store 讀 `frame.imageVersion`**,不再由呼叫方傳 `revalidateKey`。先前那個設計把「快取失效」的責任分散給每個呼叫端 —— 漏傳就停在舊畫面,而且漏了不會報錯。現在 `save()` / `remove()` 內部 bump 版本號,繞過 hook 直接寫 IndexedDB 的地方(九宮格切圖)也只要 bump 一次。
+  **實測**:在分鏡編輯器上傳圖片 → `imageVersion` 0→1、`hasImage` true,**畫布節點(另一個元件)沒有 reload 就跟著顯示新圖**;刪除圖片 → 版本 1→2、節點的 img 消失。全程沒有任何地方傳 `revalidateKey`
 
 ### N9 動作遷移(v2v · 非對標項 · 詳見 §19)
 

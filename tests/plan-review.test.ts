@@ -22,6 +22,8 @@ function frame(over: Partial<Frame> & { order: number }): Frame {
     duration: 8,
     style: "Cinematic",
     mood: "Moody/Dramatic",
+    hasImage: false,
+    imageVersion: 0,
     ...over,
   } as Frame;
 }
@@ -170,8 +172,8 @@ test("issues 依嚴重度排序:blocker 在最前", () => {
 test("成本估算:已有素材的鏡次不重複計費", () => {
   const frames = [
     frame({ order: 0 }),
-    frame({ order: 1, imageBase64Key: "image-f1" }),
-    frame({ order: 2, imageBase64Key: "image-f2", videoKey: "video-f2" }),
+    frame({ order: 1, hasImage: true }),
+    frame({ order: 2, hasImage: true, videoKey: "video-f2" }),
   ];
   const cost = estimateCost(frames, PRICING);
 

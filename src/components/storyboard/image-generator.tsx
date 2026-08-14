@@ -75,7 +75,7 @@ export function ImageGenerator({ frameId }: ImageGeneratorProps) {
 
       await save(result.base64);
       updateFrame(frameId, {
-        imageBase64Key: `image-${frameId}`,
+        hasImage: true,
         creditCost: result.creditCost,
       });
       toast.success(`生圖完成，消耗 ${result.creditCost} credits`);
@@ -106,7 +106,7 @@ export function ImageGenerator({ frameId }: ImageGeneratorProps) {
     reader.onload = async () => {
       const base64 = reader.result as string;
       await save(base64);
-      updateFrame(frameId, { imageBase64Key: `image-${frameId}` });
+      updateFrame(frameId, { hasImage: true });
       toast.success("圖片上傳成功");
     };
     reader.readAsDataURL(file);
@@ -127,7 +127,7 @@ export function ImageGenerator({ frameId }: ImageGeneratorProps) {
 
   async function handleRemove() {
     await remove();
-    updateFrame(frameId, { imageBase64Key: undefined, creditCost: undefined });
+    updateFrame(frameId, { hasImage: false, creditCost: undefined });
     toast.success("圖片已移除");
   }
 

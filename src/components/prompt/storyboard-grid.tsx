@@ -15,10 +15,10 @@ function GridCell({ frame }: { frame: Frame }) {
   const [thumbnail, setThumbnail] = useState<string | null>(null);
 
   useEffect(() => {
-    if (frame.imageBase64Key) {
+    if (frame.hasImage) {
       loadImage(frame.id).then((img) => setThumbnail(img ?? null));
     }
-  }, [frame.imageBase64Key, frame.id]);
+  }, [frame.hasImage, frame.imageVersion, frame.id]);
 
   async function handleCopyGridPrompt() {
     const prompt = buildFrameGridPrompt(

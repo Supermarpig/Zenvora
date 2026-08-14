@@ -39,7 +39,7 @@ export function useBatchGenerateImages(projectId: string) {
     const frames = useFrameStore
       .getState()
       .getFramesByProject(projectId)
-      .filter((f) => f.prompt?.trim() && (!onlyMissing || !f.imageBase64Key));
+      .filter((f) => f.prompt?.trim() && (!onlyMissing || !f.hasImage));
     const allAssets = useCharacterAssetStore.getState().assets;
     const imageTemplate = usePromptTemplateStore.getState().overrides.image;
     const visualBible = useProjectStore.getState().getProject(projectId)
@@ -77,7 +77,7 @@ export function useBatchGenerateImages(projectId: string) {
         if (res.success) {
           await saveImage(f.id, res.base64);
           updateFrame(f.id, {
-            imageBase64Key: `image-${f.id}`,
+            hasImage: true,
             creditCost: res.creditCost,
           });
           ok++;

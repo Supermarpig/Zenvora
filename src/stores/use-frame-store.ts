@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { migrateFrames } from "@/lib/frame-migrate";
 import type { Frame, CreateFrameInput } from "@/lib/schemas";
 
 interface FrameState {
@@ -17,6 +18,11 @@ interface FrameState {
   insertFrameAfter: (afterFrameId: string, input?: Partial<CreateFrameInput>) => Frame;
   importFrames: (frames: Frame[]) => void;
   updateFrame: (id: string, data: Partial<Frame>) => void;
+  /**
+   * 標記某一格的圖有變動(D4)。`hasImage` 一併設定,`imageVersion` 遞增 ——
+   * 所有透過 `useImageStorage` 讀圖的地方都會因為版本號改變而重載。
+   */
+  bumpImageVersion: (id: string, hasImage: boolean) => void;
   deleteFrame: (id: string) => void;
   deleteFramesByProject: (projectId: string) => void;
   /** 刪除季/集後把指向它們的分鏡改回「未指定」,不刪分鏡也不留斷掉的參照 */
@@ -64,6 +70,8 @@ export const useFrameStore = create<FrameState>()(
           duration: input?.duration ?? 8,
           style: input?.style ?? "Cinematic",
           mood: input?.mood ?? "Moody/Dramatic",
+          hasImage: false,
+          imageVersion: 0,
         };
         set((state) => ({ frames: [...state.frames, frame] }));
         return frame;
@@ -82,6 +90,8 @@ export const useFrameStore = create<FrameState>()(
           duration: input.duration ?? 8,
           style: input.style ?? "Cinematic",
           mood: input.mood ?? "Moody/Dramatic",
+          hasImage: false,
+          imageVersion: 0,
         }));
         set((state) => ({ frames: [...state.frames, ...newFrames] }));
         return newFrames;
@@ -103,6 +113,8 @@ export const useFrameStore = create<FrameState>()(
           duration: input?.duration ?? afterFrame.duration,
           style: input?.style ?? afterFrame.style,
           mood: input?.mood ?? afterFrame.mood,
+          hasImage: false,
+          imageVersion: 0,
         };
 
         set((state) => ({
@@ -134,6 +146,16 @@ export const useFrameStore = create<FrameState>()(
         set((state) => ({
           frames: state.frames.map((f) =>
             f.id === id ? { ...f, ...data } : f
+          ),
+        }));
+      },
+
+      bumpImageVersion: (id, hasImage) => {
+        set((state) => ({
+          frames: state.frames.map((f) =>
+            f.id === id
+              ? { ...f, hasImage, imageVersion: (f.imageVersion ?? 0) + 1 }
+              : f
           ),
         }));
       },
@@ -202,6 +224,9 @@ export const useFrameStore = create<FrameState>()(
           duration: 8,
           style: original.style,
           mood: original.mood,
+          // 拆鏡產生的新分鏡不繼承原鏡的圖 —— 畫面內容已經不同了
+          hasImage: false,
+          imageVersion: 0,
         }));
 
         const shiftAmount = newFrames.length - 1;
@@ -226,6 +251,22 @@ export const useFrameStore = create<FrameState>()(
     {
       name: "frameforge-frames",
       partialize: (state) => ({ frames: state.frames }),
+      version: 1,
+      /**
+       * v0 → v1:`imageBase64Key` 拆成 `hasImage` + `imageVersion`(技術債 D3)。
+       *
+       * 換算邏輯在 `lib/frame-migrate.ts`,**與備份還原共用同一份** ——
+       * 兩邊各寫一次的話,匯入舊備份會走到沒遷移的那條路。
+       *
+       * `partialize` 只存 frames,所以這裡收到的 state 只有那一個欄位。
+       */
+      migrate: (persisted, version) => {
+        const state = persisted as { frames?: unknown };
+        if (version === 0) {
+          return { frames: migrateFrames(state?.frames) };
+        }
+        return state as { frames: Frame[] };
+      },
     }
   )
 );

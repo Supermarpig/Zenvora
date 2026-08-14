@@ -43,6 +43,8 @@ function baseSnapshot(): Omit<Snapshot, "mediaManifest"> {
         duration: 5,
         style: "Cinematic",
         mood: "Moody/Dramatic",
+        hasImage: false,
+        imageVersion: 0,
       },
     ],
     assets: [

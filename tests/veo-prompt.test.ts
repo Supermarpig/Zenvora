@@ -20,6 +20,8 @@ const frame: Frame = {
   duration: 8,
   style: "Cinematic",
   mood: "Moody/Dramatic",
+  hasImage: false,
+  imageVersion: 0,
 };
 
 const REFERENCE_LINE =

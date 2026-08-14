@@ -43,10 +43,8 @@ export function PromptRow({ frame }: { frame: Frame }) {
   const configuredImageModel = useModelConfigStore((s) => s.imageModel);
   const imageTemplate = usePromptTemplateStore((s) => s.overrides.image);
 
-  const { imageData, save, remove } = useImageStorage(
-    frame.id,
-    frame.imageBase64Key
-  );
+  // 不再手動傳 revalidateKey —— hook 自己從 store 讀 imageVersion(D4)
+  const { imageData, save, remove } = useImageStorage(frame.id);
   const generateMutation = useGenerateImage();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -148,7 +146,7 @@ export function PromptRow({ frame }: { frame: Frame }) {
         referenceImages: referenceImages.length ? referenceImages : undefined,
       });
       await save(result.base64);
-      updateFrame(frame.id, { imageBase64Key: `image-${frame.id}` });
+      updateFrame(frame.id, { hasImage: true });
       toast.success("生圖完成");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "生圖失敗");
@@ -169,8 +167,8 @@ export function PromptRow({ frame }: { frame: Frame }) {
     const reader = new FileReader();
     reader.onload = async () => {
       const base64 = reader.result as string;
+      // save() 內部已經 bump 版本號並設好 hasImage(D4),不必再自己 updateFrame
       await save(base64);
-      updateFrame(frame.id, { imageBase64Key: `image-${frame.id}` });
       toast.success("圖片上傳成功");
     };
     reader.readAsDataURL(file);
@@ -187,7 +185,7 @@ export function PromptRow({ frame }: { frame: Frame }) {
 
   async function handleRemoveImage() {
     await remove();
-    updateFrame(frame.id, { imageBase64Key: undefined });
+    updateFrame(frame.id, { hasImage: false });
     toast.success("圖片已移除");
   }
 
