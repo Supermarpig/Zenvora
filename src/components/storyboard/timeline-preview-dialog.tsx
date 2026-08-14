@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { GalleryHorizontalEnd, Play, Pause, SkipBack } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ToolButton } from "./tool-button";
+import { Film, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { useFrameStore } from "@/stores/use-frame-store";
 import { loadImage, loadVideo } from "@/lib/db";
+import { canCompose, composeClips } from "@/lib/ffmpeg-compose";
 import {
   buildTimeline,
   type ExportTimeline,
@@ -67,10 +70,62 @@ export function TimelinePreviewDialog({
     timerRef.current = null;
   };
 
+  const [composing, setComposing] = useState(false);
+  const [composeRatio, setComposeRatio] = useState(0);
+
   const revokeUrls = useCallback(() => {
     objectUrlsRef.current.forEach((u) => URL.revokeObjectURL(u));
     objectUrlsRef.current = [];
   }, []);
+
+  /**
+   * 合成成片。**只收已經有影片的鏡次** —— 缺影片的鏡不能用圖片湊,
+   * 那需要重新編碼,而串流複製正是這個功能能在瀏覽器裡跑得動的原因。
+   *
+   * 失敗一律降級:告訴使用者改走「導出剪映」,不要讓人卡在這裡。
+   */
+  async function handleCompose() {
+    const frames = getFramesByProject(projectId);
+    const clips: { shot: number; data: Uint8Array<ArrayBuffer> }[] = [];
+
+    for (const [i, frame] of frames.entries()) {
+      const video = await loadVideo(frame.id);
+      if (!video) continue;
+      clips.push({
+        shot: i + 1,
+        data: new Uint8Array(await video.arrayBuffer()) as Uint8Array<ArrayBuffer>,
+      });
+    }
+
+    if (clips.length === 0) {
+      toast.error("沒有任何鏡次有影片 —— 先生成影片再合成");
+      return;
+    }
+    if (clips.length < frames.length) {
+      toast.info(
+        `只有 ${clips.length}/${frames.length} 鏡有影片，會只接這幾段`
+      );
+    }
+
+    setComposing(true);
+    setComposeRatio(0);
+    const result = await composeClips(clips, setComposeRatio);
+    setComposing(false);
+
+    if (!result.ok) {
+      toast.error(`${result.reason}。可改用「導出剪映」在剪映裡接`);
+      return;
+    }
+
+    const blob = new Blob([result.data], { type: result.mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${projectName}-成片.mp4`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`已合成 ${clips.length} 段成一支影片`);
+  }
 
   async function handleOpen() {
     const frames = getFramesByProject(projectId);
@@ -304,6 +359,24 @@ export function TimelinePreviewDialog({
                   <SkipBack className="mr-1.5 h-4 w-4" />
                   回到開頭
                 </Button>
+                {/* 瀏覽器不支援時整顆不渲染 —— 按了才說不行是最差的體驗 */}
+                {canCompose().ok && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCompose}
+                    disabled={composing}
+                  >
+                    {composing ? (
+                      <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Film className="mr-1.5 h-4 w-4" />
+                    )}
+                    {composing
+                      ? `合成中 ${Math.round(composeRatio * 100)}%`
+                      : "合成成片"}
+                  </Button>
+                )}
                 {clip && (
                   <p className="text-xs text-muted-foreground">
                     第 {clip.shot} 鏡 · {clip.startSec}s–
