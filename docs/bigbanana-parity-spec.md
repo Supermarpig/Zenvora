@@ -1,9 +1,10 @@
 # BigBanana 功能對標 — 補完規格書 (Spec v0.2)
 
-> 版本:v0.5 · 建立日期:2026-08-13
+> 版本:v0.6 · 建立日期:2026-08-13
 > v0.2 → v0.3:補齊漏掉的 9 項功能與 4 個架構事實(v0.2 僅基於單次 README 摘要)。
 > v0.3 → v0.4:新增 §16 內部技術債 D1–D9(與對標無關,是自身架構問題)。
 > v0.4 → v0.5:新增 §19 N9 動作遷移(v2v)。**這一節不是對標項**,是 2026-08-14 的獨立調查,但會影響里程碑優先順序。
+> v0.5 → v0.6:N1 首尾關鍵幀(Veo)完成 —— 查到官方參數是 `lastFrame`,並修掉兩個既有的 payload 錯誤(Veo 不吃 1:1、只接受 4/6/8 秒)。新增 §20「已查證但不採用」。
 > 定位:承接 [`director-console-spec.md`](./director-console-spec.md) (v0.1),對標 BigBanana AI Director 的五階段工作流,把缺口拆成可執行的實作單位。
 > 對標來源:`https://github.com/shuyu-labs/BigBanana-AI-Director`
 > **§19 的來源不是上面那個 repo** —— 見該節開頭說明。
@@ -979,20 +980,21 @@ const STYLE_LENS: Record<string, { verbose: string; compact: string }>
 
 ### N1 鏡頭工作台(中)
 
-- [ ] `VideoGenRequest.endImageDataUrl` + `VideoModelOption.supportsEndFrame`
-- [ ] `frameSchema.endImageKey` + `db.ts` 四個 end-image 函式
-- [ ] veo provider 接首尾幀
-- [ ] kling provider 接首尾幀
-- [ ] seedance provider 接首尾幀(欄位名需查證)
-- [ ] `ImageGenerator` 支援 slot(`"start" | "end"`)
-- [ ] `VideoPanel` 結束幀欄位(依 `supportsEndFrame` 顯示)
+- [x] ~~`VideoGenRequest.endImageDataUrl` + `VideoModelOption.supportsEndFrame`~~ —— 2026-08-14 完成。同時加了 `supportedAspects` 與 `allowedDurations`,因為查文件時發現**兩個既有錯誤**:Veo 只吃 16:9 / 9:16 但 UI 提供 1:1;Veo 只接受 4 / 6 / 8 秒但分鏡 `duration` 是 4–15 連續值,5 秒直接送出去會被打回來。能力寫在註冊表、UI 依此過濾
+- [x] ~~`frameSchema.endImageKey` + `db.ts` end-image 函式~~ —— `endimage-` 前綴獨立一組(`getEndImageKey` / `save` / `load` / `delete`)。**刻意不給 `saveImage` 加參數**:起始幀是「這一鏡的圖」,結束幀是「這一鏡的生成約束」,生命週期不同,備份 manifest 也要分得出來。備份已帶上結束幀
+- [x] ~~veo provider 接首尾幀~~ —— **查到官方參數是 `instances[].lastFrame`**(先前標為待查證)。抽出純函式 `buildVeoPayload` 讓回歸可測;只在有起始幀時加 lastFrame。action 那層再擋一次(引擎不支援就丟掉)
+- [ ] kling provider 接首尾幀 —— **卡在帳號**:據稱參數是 `image_tail`,但沒有 `KLING_ACCESS_KEY` 無法查證官方文件。`supportsEndFrame` 先標 `false`,不宣稱支援
+- [ ] seedance provider 接首尾幀 —— 同上卡在帳號。而且要注意:現有那個 provider 打的是**即夢 VGFM**,它沒有結束幀;Seedance 2.0 才有參考影片,但那是另一個 API(§19)
+- [ ] `ImageGenerator` 支援 slot(`"start" | "end"`)—— **未做,改用較小的做法**:結束幀的上傳/預覽/移除直接做在 `VideoPanel` 裡。把 `ImageGenerator` 參數化要動它所有的 db 呼叫與 `useImageStorage`,風險大於價值;而且結束幀是「影片的生成約束」,放在影片面板比放在生圖面板更合語意
+- [x] ~~`VideoPanel` 結束幀欄位(依 `supportsEndFrame` 顯示)~~ —— 只在 `supportsEndFrame && 有起始幀 && 鏈路不是 t2v` 時出現;引擎把秒數吸附掉時明講「分鏡設的 5s 會以 4s 送出」
 - [x] ~~雙視頻鏈路:t2v / i2v 明確入口(§4.8)~~ —— 2026-08-13 完成。`VideoPanel` 加鏈路下拉,三個選項:`auto`(預設,行為與先前完全一致)/ `i2v` / `t2v`。
   **明確選了就不再自動退讓**:選 i2v 卻沒有關鍵幀時直接報錯,不靜默改走 t2v 燒掉額度;選 i2v 但引擎 `supportsImage === false` 也擋下。
   同時修掉一個既有缺陷:`buildVeoPrompt` 無條件加「必須符合上傳參考圖的長相」,但 t2v 根本沒有參考圖 —— 加 `hasReferenceImage` 選項(**預設 true,既有呼叫方輸出不變**),t2v 時省掉那一句。
   **未採用** spec 原本建議的「i2v 改走 `buildFlowPrompt`」:那會改動目前主路徑的 payload,而生影片沒有免費額度、無法驗證品質是否真的更好。留待有額度時再評估。
   **實測**:選 i2v 且無關鍵幀 → toast 明確提示且 network 面板無任何 server action 請求(擋在送出前);4 個單元測試釘住 `hasReferenceImage` 的預設等價與「只少那一段」。t2v 的實際送出未跑 —— 生影片要真金白銀
 - [x] ~~宮格 4/6/9 × 橫直版(§4.9)~~ —— 2026-08-13 完成。實作為 `gridSpec()`(非初稿的 `gridLayout()`),同時回傳排版、整張比例與**每格的近似比例**;`buildGridPrompt` 加 `orientation` 參數,UI 可選格數與方向(預設 9 格直版,因為這個工具主要用於短影音)。8 個單元測試釘住排版數學,並實測 6 格橫版切圖順序正確
-- [ ] 驗收:只有起始幀時 payload 與現行完全一致(防回歸)
+- [x] ~~驗收:只有起始幀時 payload 與現行完全一致(防回歸)~~ —— 11 個單元測試(`tests/veo-payload.test.ts`)。這條是首尾關鍵幀最大的風險:改壞現有圖生影片會安靜地變成別的東西,而生影片沒有免費額度、開發時不會有人發現。
+  **瀏覽器實測**:攔截 server action 的 request body —— `mode=i2v`、起始幀與結束幀都在且內容不同、5s 已吸附成 4s、Veo 的比例下拉只有 16:9/9:16、切到即夢後結束幀 slot 消失。**全程攔掉 POST,沒有任何請求打到 Veo**
 
 ### N2 資產庫泛化(中)
 
@@ -1347,3 +1349,27 @@ UI:`VideoPanel` 的鏈路下拉加第三個選項,**依 `supportsDrivingVideo` �
 4. 只有起始幀時的 payload 與現行 i2v **完全一致**(防回歸)
 5. `@角色名` 在 v2v 的 prompt 裡被正確轉成 provider 要的參考圖編號
 6. 舊專案(沒有 `drivingVideoUrl`)行為完全不變
+
+---
+
+## 20. 已查證但不採用
+
+> 這一節放「調查過、有結論、但決定不做」的東西 —— 免得日後有人再走一次同一條路。
+
+### 20.1 生圖走 Flex 服務層
+
+2026-08-14 調查。**結論是不做**,記錄下來避免日後重複這條路。
+
+起點是官方定價頁把 `gemini-2.5-flash-image` 的 Flex 價列成 **$0.0195/張**,正好是標準層 $0.039 的一半,看起來是「批次生圖免費砍半」。實際查 Flex 的文件後有三個問題:
+
+| 問題 | 說明 |
+|---|---|
+| **欄位名** | 是 `service_tier`(snake_case)放在 **request body 頂層**,不是 `serviceTier`、也不在 `generationConfig` 裡 |
+| **端點不同** | 官方範例用的是 **Interactions API**(`/v1beta/interactions`),不是本專案在用的 `generateContent` |
+| **模型清單沒有生圖模型** | Flex 支援的模型全是文字模型(2.5 Flash、3.x Flash/Pro 等),**`gemini-2.5-flash-image` 不在清單裡** |
+
+第三點與定價頁互相矛盾,而**沒有 billing 無法判定哪一份是對的**。在一條會花錢、又測不到的路徑上塞一個可能被靜默忽略、也可能直接 400 的欄位,比不做更糟 —— 程式碼寫過一版後已還原。
+
+**有額度之後要驗的順序**:先用文字模型確認 `service_tier` 在 `generateContent` 上是否生效(文字模型明確在支援清單裡),再試生圖模型。兩者都通才值得接。
+
+**順帶**:Batch API 也不適合。它是非同步、目標 24 小時,而本專案的「批次生圖」是一個跑幾分鐘的 for 迴圈;而且生圖沒有 `use-job-store` 那套任務追蹤機制,要用 Batch 得先為生圖蓋一次。為每張省 $0.02 蓋一套非同步任務系統不划算。
