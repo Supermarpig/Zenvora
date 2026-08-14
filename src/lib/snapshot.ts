@@ -46,7 +46,7 @@ export function payloadToStoredValue(
   return `data:${entry.mime};base64,${btoa(binary)}`;
 }
 
-/** IndexedDB 的 key 直接當檔名 —— 現有 key 都是安全字元(image- / video- / asset-) */
+/** IndexedDB 的 key 直接當檔名 —— 現有 key 都是安全字元(image- / endimage- / video- / asset-) */
 function fileNameFor(key: string): string {
   return MEDIA_DIR + key;
 }

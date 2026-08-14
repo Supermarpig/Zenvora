@@ -21,6 +21,33 @@ export async function getAllImageKeys(): Promise<string[]> {
   return allKeys.filter((k) => String(k).startsWith("image-")).map(String);
 }
 
+// --- 結束幀(首尾關鍵幀插值用)---
+//
+// 刻意獨立成一組函式而不是給 saveImage 加參數:起始幀是「這一鏡的圖」,
+// 結束幀是「這一鏡的生成約束」,兩者生命週期不同(刪影片不該刪起始幀,
+// 換結束幀不該動起始幀)。key 前綴也不同,備份的 manifest 才分得出來。
+
+export function getEndImageKey(frameId: string): string {
+  return `endimage-${frameId}`;
+}
+
+export async function saveEndImage(
+  frameId: string,
+  base64: string
+): Promise<void> {
+  await set(getEndImageKey(frameId), base64);
+}
+
+export async function loadEndImage(
+  frameId: string
+): Promise<string | undefined> {
+  return get<string>(getEndImageKey(frameId));
+}
+
+export async function deleteEndImage(frameId: string): Promise<void> {
+  await del(getEndImageKey(frameId));
+}
+
 // --- 影片(以 Blob 儲存,避免 base64 膨脹)---
 
 export function getVideoKey(frameId: string): string {

@@ -57,6 +57,52 @@ function extractVideoUri(response: unknown): string | undefined {
   return undefined;
 }
 
+/**
+ * 組 Veo 的 request body。
+ *
+ * 抽成純函式是為了讓「只有起始幀時 payload 與加結束幀之前完全一致」這件事
+ * 有測試釘著 —— 這條回歸是首尾關鍵幀最大的風險:改壞了現有的圖生影片會安靜地
+ * 變成別的東西,而生影片沒有免費額度,不會有人在開發時發現。
+ */
+export function buildVeoPayload(req: VideoGenRequest): {
+  instances: Record<string, unknown>[];
+  parameters: Record<string, unknown>;
+} {
+  const instance: Record<string, unknown> = { prompt: req.prompt };
+
+  if (req.mode === "i2v" && req.imageDataUrl) {
+    const inline = toInline(req.imageDataUrl);
+    if (inline) {
+      instance.image = {
+        bytesBase64Encoded: inline.data,
+        mimeType: inline.mimeType,
+      };
+
+      // 結束幀只在有起始幀時才加 —— Veo 的 lastFrame 是「從 image 插值到
+      // lastFrame」的約束,沒有起點的終點不成立。
+      if (req.endImageDataUrl) {
+        const end = toInline(req.endImageDataUrl);
+        if (end) {
+          instance.lastFrame = {
+            bytesBase64Encoded: end.data,
+            mimeType: end.mimeType,
+          };
+        }
+      }
+    }
+  }
+
+  return {
+    instances: [instance],
+    parameters: {
+      aspectRatio: req.aspectRatio,
+      durationSeconds: req.durationSec,
+      personGeneration: "allow_all",
+      generateAudio: req.withAudio ?? false,
+    },
+  };
+}
+
 export function createVeoProvider(): VideoProvider {
   return {
     id: "veo",
@@ -66,31 +112,12 @@ export function createVeoProvider(): VideoProvider {
       const key = getKey();
       const model = req.model || "veo-3.1-generate-preview";
 
-      const instance: Record<string, unknown> = { prompt: req.prompt };
-      if (req.mode === "i2v" && req.imageDataUrl) {
-        const inline = toInline(req.imageDataUrl);
-        if (inline) {
-          instance.image = {
-            bytesBase64Encoded: inline.data,
-            mimeType: inline.mimeType,
-          };
-        }
-      }
-
       const res = await fetch(
         `${API_BASE}/models/${model}:predictLongRunning?key=${key}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            instances: [instance],
-            parameters: {
-              aspectRatio: req.aspectRatio,
-              durationSeconds: req.durationSec,
-              personGeneration: "allow_all",
-              generateAudio: req.withAudio ?? false,
-            },
-          }),
+          body: JSON.stringify(buildVeoPayload(req)),
         }
       );
 

@@ -33,6 +33,7 @@ import {
 } from "@/lib/snapshot";
 import {
   loadImage,
+  loadEndImage,
   loadVideo,
   loadAssetImage,
   restoreRawValue,
@@ -99,6 +100,12 @@ export function BackupDialog({
         const image = await loadImage(frame.id);
         if (image) {
           const payload = dataUrlToPayload(`image-${frame.id}`, image);
+          if (payload) media.push(payload);
+        }
+        // 結束幀也要帶,否則還原後首尾插值的設定會不見
+        const endImage = await loadEndImage(frame.id);
+        if (endImage) {
+          const payload = dataUrlToPayload(`endimage-${frame.id}`, endImage);
           if (payload) media.push(payload);
         }
         const video = await loadVideo(frame.id);

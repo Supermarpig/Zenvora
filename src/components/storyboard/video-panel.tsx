@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Clapperboard,
   Loader2,
@@ -9,6 +9,8 @@ import {
   VolumeX,
   AlertTriangle,
   RotateCcw,
+  Upload,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -22,10 +24,18 @@ import {
 import { useFrameStore } from "@/stores/use-frame-store";
 import { useVideoGeneration } from "@/hooks/use-generate-video";
 import { buildVeoPrompt } from "@/lib/veo-prompt";
-import { loadImage } from "@/lib/db";
+import {
+  loadImage,
+  loadEndImage,
+  saveEndImage,
+  deleteEndImage,
+  getEndImageKey,
+} from "@/lib/db";
 import {
   VIDEO_MODELS,
   getModelOption,
+  snapDuration,
+  supportedAspects,
 } from "@/lib/video";
 import type { VideoAspectRatio, VideoMode } from "@/lib/video/types";
 import { useModelConfigStore } from "@/stores/use-model-config-store";
@@ -56,6 +66,7 @@ interface VideoPanelProps {
 
 export function VideoPanel({ frameId }: VideoPanelProps) {
   const frame = useFrameStore((s) => s.getFrame(frameId));
+  const updateFrame = useFrameStore((s) => s.updateFrame);
   const { status, videoUrl, isSubmitting, elapsedSec, error, generate, removeVideo } =
     useVideoGeneration(frameId);
 
@@ -68,6 +79,8 @@ export function VideoPanel({ frameId }: VideoPanelProps) {
   const [withAudio, setWithAudio] = useState(false);
   const [hasImage, setHasImage] = useState<boolean | null>(null);
   const [link, setLink] = useState<LinkChoice>("auto");
+  const [endImage, setEndImage] = useState<string | null>(null);
+  const endInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let alive = true;
@@ -77,7 +90,30 @@ export function VideoPanel({ frameId }: VideoPanelProps) {
     };
   }, [frameId, status]);
 
+  // 結束幀存在 IndexedDB,切換分鏡要重新載入
+  useEffect(() => {
+    let alive = true;
+    loadEndImage(frameId).then((img) => alive && setEndImage(img ?? null));
+    return () => {
+      alive = false;
+    };
+  }, [frameId]);
+
   const running = status === "running";
+  const option = getModelOption(model);
+  const supportsEndFrame = !!option?.supportsEndFrame;
+  const allowedAspects = supportedAspects(model);
+  const aspectOptions = ASPECT_OPTIONS.filter((a) =>
+    allowedAspects.includes(a.value)
+  );
+  // 換引擎後原本選的比例可能不再支援(例:1:1 換到 Veo),送出前用第一個可用的
+  const effectiveAspect = allowedAspects.includes(aspect)
+    ? aspect
+    : allowedAspects[0];
+  // 引擎對秒數有限制時(Veo 只吃 4/6/8)顯示實際會送出的值
+  const effectiveDuration = frame
+    ? snapDuration(model, Math.min(15, Math.max(2, frame.duration)))
+    : 0;
 
   async function handleGenerate() {
     if (!frame) return;
@@ -107,8 +143,11 @@ export function VideoPanel({ frameId }: VideoPanelProps) {
         hasReferenceImage: mode === "i2v",
       }),
       imageDataUrl: mode === "i2v" ? (img ?? undefined) : undefined,
-      aspectRatio: aspect,
-      durationSec: Math.min(15, Math.max(2, frame.duration)),
+      // 結束幀只在 i2v 且引擎支援時送(action 那層還會再擋一次)
+      endImageDataUrl:
+        mode === "i2v" && supportsEndFrame && endImage ? endImage : undefined,
+      aspectRatio: effectiveAspect,
+      durationSec: effectiveDuration,
       withAudio,
       model,
     });
@@ -121,6 +160,36 @@ export function VideoPanel({ frameId }: VideoPanelProps) {
     } else {
       toast.error(r.error);
     }
+  }
+
+  async function handlePickEndImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("請選擇圖片檔案");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("圖片大小不可超過 10MB");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const dataUrl = reader.result as string;
+      await saveEndImage(frameId, dataUrl);
+      setEndImage(dataUrl);
+      // frameSchema 的 endImageKey 只當「有沒有結束幀」的標記,實際載入走 loadEndImage
+      updateFrame(frameId, { endImageKey: getEndImageKey(frameId) });
+      toast.success("已設定結束幀");
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function handleClearEndImage() {
+    await deleteEndImage(frameId);
+    setEndImage(null);
+    updateFrame(frameId, { endImageKey: undefined });
   }
 
   const creditCost = getModelOption(model)?.creditCost ?? 0;
@@ -216,14 +285,14 @@ export function VideoPanel({ frameId }: VideoPanelProps) {
 
           <div className="grid grid-cols-2 gap-2">
             <Select
-              value={aspect}
+              value={effectiveAspect}
               onValueChange={(v) => setAspect(v as VideoAspectRatio)}
             >
               <SelectTrigger className="text-xs">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {ASPECT_OPTIONS.map((a) => (
+                {aspectOptions.map((a) => (
                   <SelectItem key={a.value} value={a.value}>
                     {a.label}
                   </SelectItem>
@@ -245,6 +314,67 @@ export function VideoPanel({ frameId }: VideoPanelProps) {
               {withAudio ? "含台詞/音訊" : "靜音（僅環境音）"}
             </Button>
           </div>
+
+          {/* 結束幀:只有支援的引擎才出現,而且只在會走 i2v 時有意義。
+              沒有起始幀時整段藏起來 —— 「插值到終點」需要有起點。 */}
+          {supportsEndFrame && link !== "t2v" && hasImage && (
+            <div className="space-y-1.5 rounded-lg border bg-background/60 p-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-medium">
+                  結束幀（選填）
+                </span>
+                <span className="text-[10px] text-muted-foreground">
+                  設了就從起始幀插值到它
+                </span>
+              </div>
+
+              <input
+                ref={endInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handlePickEndImage}
+              />
+
+              {endImage ? (
+                <div className="flex items-center gap-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={endImage}
+                    alt="結束幀"
+                    className="h-12 w-20 rounded border object-cover"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={handleClearEndImage}
+                  >
+                    <X className="mr-1 h-3 w-3" />
+                    移除
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 w-full text-xs"
+                  onClick={() => endInputRef.current?.click()}
+                >
+                  <Upload className="mr-1.5 h-3 w-3" />
+                  上傳結束幀
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* 引擎把秒數吸附掉時要講出來,否則使用者以為設 5 秒就是 5 秒 */}
+          {frame && effectiveDuration !== frame.duration && (
+            <p className="text-[11px] text-amber-600 dark:text-amber-500">
+              這個引擎只接受 {option?.allowedDurations?.join(" / ")} 秒，
+              分鏡設的 {frame.duration}s 會以 {effectiveDuration}s 送出。
+            </p>
+          )}
         </>
       )}
 

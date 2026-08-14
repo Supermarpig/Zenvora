@@ -7,6 +7,13 @@ export interface VideoGenRequest {
   prompt: string;
   /** i2v:起始參考圖 data URL */
   imageDataUrl?: string;
+  /**
+   * 結束幀 data URL(首尾關鍵幀插值)。
+   *
+   * **只在有起始幀時有意義** —— 沒有起點的「插值到終點」不成立。
+   * provider 不支援時直接忽略,不要退化成別的行為。
+   */
+  endImageDataUrl?: string;
   aspectRatio: VideoAspectRatio;
   durationSec: number;
   withAudio?: boolean;
@@ -43,5 +50,17 @@ export interface VideoModelOption {
   supportsImage: boolean;
   /** 是否原生支援音訊 */
   supportsAudio: boolean;
+  /** 是否支援結束幀(首尾關鍵幀插值) */
+  supportsEndFrame: boolean;
+  /**
+   * 這個引擎接受的畫面比例。UI 依此過濾,不要讓使用者選了才被 API 打回來 ——
+   * 例如 Veo 只吃 16:9 與 9:16,先前 UI 卻提供 1:1。
+   */
+  supportedAspects: VideoAspectRatio[];
+  /**
+   * 這個引擎接受的秒數。留空表示連續值不設限;有值時 provider 會吸附到最近的一個。
+   * Veo 只接受 4 / 6 / 8。
+   */
+  allowedDurations?: number[];
   creditCost: number;
 }

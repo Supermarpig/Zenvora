@@ -224,6 +224,8 @@ export const frameSchema = z.object({
   creditCost: z.number().optional(),
   /** 所屬集;未指定 = 直接掛在專案下(舊資料與單集專案) */
   episodeId: z.string().optional(),
+  /** 結束幀在 IndexedDB 的 key(endimage-{frameId});只當「有沒有結束幀」的標記 */
+  endImageKey: z.string().optional(),
   // --- 選角 ---
   /** 本格出場的人物資產 id */
   castIds: z.array(z.string()).optional(),

@@ -1,7 +1,11 @@
 import { createVeoProvider } from "./veo-provider";
 import { createSeedanceProvider } from "./seedance-provider";
 import { createKlingProvider } from "./kling-provider";
-import type { VideoModelOption, VideoProvider } from "./types";
+import type {
+  VideoAspectRatio,
+  VideoModelOption,
+  VideoProvider,
+} from "./types";
 
 /**
  * Provider registry。新增引擎只要在這裡註冊一個實作 `VideoProvider` 的 adapter,
@@ -38,6 +42,11 @@ export const VIDEO_MODELS: VideoModelOption[] = [
     label: "Veo 3.1（Google · 品質最高 · 貴）",
     supportsImage: true,
     supportsAudio: true,
+    supportsEndFrame: true,
+    // Veo 官方只列 16:9 與 9:16 —— 先前 UI 提供 1:1,選了會被 API 打回來
+    supportedAspects: ["16:9", "9:16"],
+    // 官方只接受 4 / 6 / 8 秒
+    allowedDurations: [4, 6, 8],
     creditCost: 40,
   },
   {
@@ -46,6 +55,9 @@ export const VIDEO_MODELS: VideoModelOption[] = [
     label: "Veo 3.1 Fast（Google · 最省 ~$0.15/s）",
     supportsImage: true,
     supportsAudio: true,
+    supportsEndFrame: true,
+    supportedAspects: ["16:9", "9:16"],
+    allowedDurations: [4, 6, 8],
     creditCost: 15,
   },
   {
@@ -64,6 +76,9 @@ export const VIDEO_MODELS: VideoModelOption[] = [
     label: "即夢 2.0（字節/火山 · ~$0.14/s）",
     supportsImage: true,
     supportsAudio: true,
+    // 即夢 VGFM 沒有結束幀參數(Seedance 2.0 才有參考影片,但那是另一個 API)
+    supportsEndFrame: false,
+    supportedAspects: ["16:9", "9:16", "1:1"],
     creditCost: 14,
   },
   {
@@ -73,6 +88,9 @@ export const VIDEO_MODELS: VideoModelOption[] = [
     label: "Kling 3（快手/可灵 · 中文理解強）",
     supportsImage: true,
     supportsAudio: false,
+    // Kling 據稱有 image_tail,但沒有帳號無從查證欄位名,先不宣稱支援
+    supportsEndFrame: false,
+    supportedAspects: ["16:9", "9:16", "1:1"],
     creditCost: 28,
   },
 ];
@@ -81,4 +99,24 @@ export const DEFAULT_VIDEO_MODEL = VIDEO_MODELS[0].model;
 
 export function getModelOption(model: string): VideoModelOption | undefined {
   return VIDEO_MODELS.find((m) => m.model === model);
+}
+
+/**
+ * 把使用者設定的秒數吸附到引擎接受的值。
+ *
+ * Veo 只接受 4 / 6 / 8 秒,但分鏡的 `duration` 是 4–15 的連續值 —— 先前直接
+ * 送出去,5 秒、7 秒之類都會被 API 打回來。沒有 `allowedDurations` 的引擎
+ * 維持原值不動。
+ */
+export function snapDuration(model: string, durationSec: number): number {
+  const allowed = getModelOption(model)?.allowedDurations;
+  if (!allowed?.length) return durationSec;
+  return allowed.reduce((best, v) =>
+    Math.abs(v - durationSec) < Math.abs(best - durationSec) ? v : best
+  );
+}
+
+/** 引擎接受的畫面比例;找不到選項時回全部(不要因此把 UI 清空) */
+export function supportedAspects(model: string): VideoAspectRatio[] {
+  return getModelOption(model)?.supportedAspects ?? ["16:9", "9:16", "1:1"];
 }
