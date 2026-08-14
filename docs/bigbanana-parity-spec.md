@@ -1069,7 +1069,11 @@ const STYLE_LENS: Record<string, { verbose: string; compact: string }>
 
 ### N5 專案層級(大)
 
-- [ ] `seasonSchema` / `episodeSchema` / `frameSchema.episodeId`(可選,不改 `projectId`)
+- [x] ~~`seasonSchema` / `episodeSchema` / `frameSchema.episodeId`(可選,不改 `projectId`)~~ —— 2026-08-13 完成。新增 `use-episode-store.ts`(獨立 store,不塞進 project store —— 否則每改一次集名都要重寫整個專案陣列),`getFramesByEpisode` 與 `clearEpisodeAssignments` 加在 frame store。
+  UI 三處,**都只在「有建立季/集」時才出現**:工具列「季 / 集」對話框(唯一入口)、分鏡編輯器的「所屬集」下拉、畫布上方的篩選列。
+  **篩選只影響顯示哪些節點,不重新編號** —— 篩到某一集看到的是第 4、5、6 鏡而不是重新從 1 開始,因為 `order` 是專案內的鏡號。
+  **刪除季/集不刪分鏡**,只把 `episodeId` 清成未指定(跨 store 的連動由對話框做,store 之間不互相 import)。
+  備份一併帶走季/集:`snapshotSchema` 加 `seasons` / `episodes`,兩者都是 `.default([])`,**舊備份照樣讀得回來**
 - [x] ~~`worldview` 結構化~~ —— 2026-08-13 完成。`setting` / `visualBible` / `musicMood` + `regions[].locations[]` 兩層結構,地點可綁 `sceneAssetId` 讓「世界觀裡的地點」與「可 @ 引用的場景資產」對上。地圖依 §8.3 列為非目標
 - [x] ~~`visualBible` 注入所有生成 prompt~~ —— 位置在**角色一致性之後、逐鏡描述之前**:基調在中間才不會被逐鏡描述蓋掉,也不會壓過角色的參考圖約束。三個生圖入口都接上,實測 payload 為四段且基調確實在畫面描述之前;未填或全空白時輸出與先前完全相同(不留空段)
 - [x] ~~小說匯入:兩階段確認~~ —— 2026-08-13 完成。第一階段只拆場次與角色,**不建立任何分鏡資料**;確認後才逐場拆鏡。
@@ -1077,7 +1081,10 @@ const STYLE_LENS: Record<string, { verbose: string; compact: string }>
   順便產出角色清單並可一鍵建成資產,建立後拆鏡就能用 `@` 引用 —— 這條銜接是實測過的:建 2 個資產 → 略過 2 場 → 從 1 場產生的 3 鏡全部帶 `@小雨` 引用。
   長文上限 50,000 字並明確提示;spec 原本設計的「分段處理 + 摘要串接」沒做 —— `gemini-2.5-flash` 的 context 足以吃下一般章節,先用上限換簡單
 - [x] ~~專案 / 全域備份(共用 `snapshotSchema`)~~ —— 已在 N4 一併完成(`settings/backup-dialog.tsx` 的「匯出範圍」可選全部或單一專案,兩者走同一份 `snapshotSchema`,`scope` 欄位記 `"all" | "project"`)。資產庫一律整份帶走 —— 它是跨專案共用的,少帶會讓還原後的選角失效
-- [ ] 驗收:現有無季/集專案完全不受影響
+- [x] ~~驗收:現有無季/集專案完全不受影響~~ —— **實測**:沒有季的專案畫布無篩選列、編輯器無「所屬集」欄位、`localStorage` 連 `frameforge-episodes` 這個 key 都不會產生。
+  建 1 季 1 集後篩選列出現(全部 3 / 未指定 3 / 第 1 集 0),把第 1 鏡指派過去 → 計數變成 未指定 2 / 第 1 集 1,篩到第 1 集只剩 1 個節點且**鏡號仍是 1**,篩到未指定剩 2 個節點且**鏡號仍是 2、3**(沒有重編)。
+  刪掉季 → 集一併消失、第 1 鏡的 `episodeId` 回到 none(非 dangling)、篩選列消失。
+  2 個單元測試釘住:舊備份(JSON 裡根本沒有 `seasons`/`episodes` 兩個 key)解析後兩者為 `[]` 且分鏡不會憑空長出 `episodeId`;季/集 round-trip 欄位完整
 
 ### N8 其餘補強(小)
 

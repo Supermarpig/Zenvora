@@ -7,6 +7,8 @@ interface FrameState {
   selectedFrameId: string | null;
 
   getFramesByProject: (projectId: string) => Frame[];
+  /** 某一集的分鏡;`order` 仍是專案內的鏡號,不重新編號 */
+  getFramesByEpisode: (episodeId: string) => Frame[];
   getFrame: (id: string) => Frame | undefined;
   setSelectedFrameId: (id: string | null) => void;
 
@@ -17,6 +19,8 @@ interface FrameState {
   updateFrame: (id: string, data: Partial<Frame>) => void;
   deleteFrame: (id: string) => void;
   deleteFramesByProject: (projectId: string) => void;
+  /** 刪除季/集後把指向它們的分鏡改回「未指定」,不刪分鏡也不留斷掉的參照 */
+  clearEpisodeAssignments: (episodeIds: string[]) => void;
   reorderFrames: (projectId: string, orderedIds: string[]) => void;
   splitFrame: (frameId: string, dialogueSegments: string[]) => number;
 }
@@ -30,6 +34,12 @@ export const useFrameStore = create<FrameState>()(
       getFramesByProject: (projectId) => {
         return get()
           .frames.filter((f) => f.projectId === projectId)
+          .sort((a, b) => a.order - b.order);
+      },
+
+      getFramesByEpisode: (episodeId) => {
+        return get()
+          .frames.filter((f) => f.episodeId === episodeId)
           .sort((a, b) => a.order - b.order);
       },
 
@@ -152,6 +162,18 @@ export const useFrameStore = create<FrameState>()(
       deleteFramesByProject: (projectId) => {
         set((state) => ({
           frames: state.frames.filter((f) => f.projectId !== projectId),
+        }));
+      },
+
+      clearEpisodeAssignments: (episodeIds) => {
+        if (episodeIds.length === 0) return;
+        const targets = new Set(episodeIds);
+        set((state) => ({
+          frames: state.frames.map((f) =>
+            f.episodeId && targets.has(f.episodeId)
+              ? { ...f, episodeId: undefined }
+              : f
+          ),
         }));
       },
 

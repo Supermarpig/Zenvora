@@ -36,6 +36,7 @@ import { buildVeoPrompt } from "@/lib/veo-prompt";
 import { ImageGenerator } from "./image-generator";
 import { VideoPanel } from "./video-panel";
 import { CastPicker } from "@/components/character/cast-picker";
+import { EpisodePicker } from "@/components/project/episode-picker";
 
 export function FrameEditor() {
   const selectedFrameId = useFrameStore((s) => s.selectedFrameId);
@@ -162,6 +163,7 @@ export function FrameEditor() {
 
                 <div className="space-y-4">
                   <CastPicker frameId={frame.id} />
+                  <EpisodePicker frameId={frame.id} />
 
                   <Form {...form}>
                     <form

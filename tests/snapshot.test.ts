@@ -58,6 +58,8 @@ function baseSnapshot(): Omit<Snapshot, "mediaManifest"> {
         updatedAt: "",
       },
     ],
+    seasons: [],
+    episodes: [],
   } as Omit<Snapshot, "mediaManifest">;
 }
 
@@ -156,4 +158,56 @@ test("manifest 列了但 zip 裡沒有的素材 → 整批拒絕,不還原半套
     // 刻意不放 media/image-f1
   ]);
   await assert.rejects(() => parseSnapshotZip(bogus), /manifest 列了/);
+});
+
+test("舊備份(沒有 seasons / episodes)照樣讀得回來", async () => {
+  const { createZip } = await import("../src/lib/zip.ts");
+  // 模擬加入季/集之前匯出的備份:snapshot.json 裡根本沒有這兩個 key
+  const old = {
+    ...baseSnapshot(),
+    mediaManifest: [],
+  } as Record<string, unknown>;
+  delete old.seasons;
+  delete old.episodes;
+
+  const zip = createZip([
+    {
+      name: "snapshot.json",
+      data: new TextEncoder().encode(JSON.stringify(old)) as Uint8Array<ArrayBuffer>,
+    },
+  ]);
+  const { snapshot } = await parseSnapshotZip(zip);
+
+  assert.deepEqual(snapshot.seasons, []);
+  assert.deepEqual(snapshot.episodes, []);
+  // 舊分鏡沒有 episodeId,解析後也不該憑空長出來
+  assert.equal(snapshot.frames[0].episodeId, undefined);
+  assert.equal(snapshot.frames[0].prompt, "a shot");
+});
+
+test("季 / 集 round-trip", async () => {
+  const withEpisodes = {
+    ...baseSnapshot(),
+    seasons: [
+      { id: "s1", projectId: "p1", name: "第一季", order: 0, createdAt: "" },
+    ],
+    episodes: [
+      {
+        id: "e1",
+        seasonId: "s1",
+        name: "第 1 集",
+        order: 0,
+        synopsis: "開場",
+        createdAt: "",
+      },
+    ],
+  } as Omit<Snapshot, "mediaManifest">;
+
+  const zip = snapshotToZip(withEpisodes, []);
+  const { snapshot } = await parseSnapshotZip(zip);
+
+  assert.equal(snapshot.seasons.length, 1);
+  assert.equal(snapshot.seasons[0].name, "第一季");
+  assert.equal(snapshot.episodes[0].seasonId, "s1");
+  assert.equal(snapshot.episodes[0].synopsis, "開場");
 });

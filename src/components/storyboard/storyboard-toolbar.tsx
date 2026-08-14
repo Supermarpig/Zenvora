@@ -13,6 +13,7 @@ import { PlanReviewDialog } from "./plan-review-dialog";
 import { TimelinePreviewDialog } from "./timeline-preview-dialog";
 import { RoughCutDialog } from "./rough-cut-dialog";
 import { NovelImportDialog } from "./novel-import-dialog";
+import { EpisodeManagerDialog } from "@/components/project/episode-manager-dialog";
 import { useProjectStore } from "@/stores/use-project-store";
 import { useFrameStore } from "@/stores/use-frame-store";
 import { seedProject, seedFrames } from "@/lib/seed-data";
@@ -59,6 +60,7 @@ export function StoryboardToolbar({
           </Link>
         </Button>
         <CharacterManager projectId={projectId} />
+        <EpisodeManagerDialog projectId={projectId} />
         {projectId === seedProject.id && (
           <Button variant="outline" size="sm" onClick={handleReseed}>
             <RotateCcw className="mr-1.5 h-4 w-4" />

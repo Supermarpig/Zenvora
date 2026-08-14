@@ -142,6 +142,36 @@ export const createProjectSchema = z.object({
 
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;
 
+// --- 季 / 集(可選的第三層)---
+
+/**
+ * 季與集是**加在專案之下的可選層**,不是取代 `frame.projectId`。
+ *
+ * 換句話說:`frame.episodeId` 沒填就是「直接掛在專案下」,舊資料與單集專案
+ * 完全不受影響 —— 把 `projectId` 改成 `episodeId` 會是破壞性遷移,現有資料
+ * 全部要重寫,不值得。
+ */
+export const seasonSchema = z.object({
+  id: z.string(),
+  projectId: z.string(),
+  name: z.string().min(1, "季名稱不可為空"),
+  order: z.number().int().min(0),
+  createdAt: z.string(),
+});
+
+export type Season = z.infer<typeof seasonSchema>;
+
+export const episodeSchema = z.object({
+  id: z.string(),
+  seasonId: z.string(),
+  name: z.string().min(1, "集名稱不可為空"),
+  order: z.number().int().min(0),
+  synopsis: z.string().default(""),
+  createdAt: z.string(),
+});
+
+export type Episode = z.infer<typeof episodeSchema>;
+
 export const CAMERA_MOVEMENTS = [
   "Fixed",
   "Pan Left",
@@ -192,6 +222,8 @@ export const frameSchema = z.object({
   mood: z.enum(MOOD_OPTIONS).default("Moody/Dramatic"),
   imageBase64Key: z.string().optional(),
   creditCost: z.number().optional(),
+  /** 所屬集;未指定 = 直接掛在專案下(舊資料與單集專案) */
+  episodeId: z.string().optional(),
   // --- 選角 ---
   /** 本格出場的人物資產 id */
   castIds: z.array(z.string()).optional(),
@@ -256,6 +288,9 @@ export const snapshotSchema = z.object({
   projects: z.array(projectSchema).default([]),
   frames: z.array(frameSchema).default([]),
   assets: z.array(characterAssetSchema).default([]),
+  // 舊備份沒有這兩個欄位,`default([])` 讓它們照樣讀得進來
+  seasons: z.array(seasonSchema).default([]),
+  episodes: z.array(episodeSchema).default([]),
   mediaManifest: z.array(mediaManifestEntrySchema).default([]),
 });
 

@@ -23,6 +23,7 @@ import {
 import { useProjectStore } from "@/stores/use-project-store";
 import { useFrameStore } from "@/stores/use-frame-store";
 import { useCharacterAssetStore } from "@/stores/use-character-asset-store";
+import { useEpisodeStore } from "@/stores/use-episode-store";
 import {
   snapshotToZip,
   parseSnapshotZip,
@@ -66,6 +67,7 @@ export function BackupDialog() {
   const importProject = useProjectStore((s) => s.importProject);
   const importFrames = useFrameStore((s) => s.importFrames);
   const upsertAssets = useCharacterAssetStore((s) => s.upsertAssets);
+  const upsertEpisodes = useEpisodeStore((s) => s.upsert);
 
   async function handleExport() {
     setBusy(true);
@@ -112,6 +114,15 @@ export function BackupDialog() {
         }
       }
 
+      // 季/集只帶匯出範圍內的專案(它們有 projectId,不像資產是跨專案共用)
+      const seasons = useEpisodeStore
+        .getState()
+        .seasons.filter((s) => projectIds.has(s.projectId));
+      const seasonIds = new Set(seasons.map((s) => s.id));
+      const episodes = useEpisodeStore
+        .getState()
+        .episodes.filter((e) => seasonIds.has(e.seasonId));
+
       const snapshot: Omit<Snapshot, "mediaManifest"> = {
         version: 1,
         scope: scope === ALL ? "all" : "project",
@@ -119,6 +130,8 @@ export function BackupDialog() {
         projects: targetProjects,
         frames,
         assets: allAssets,
+        seasons,
+        episodes,
       };
 
       const zip = snapshotToZip(snapshot, media);
@@ -180,6 +193,7 @@ export function BackupDialog() {
       }
       byProject.forEach((frames) => importFrames(frames));
       upsertAssets(snapshot.assets);
+      upsertEpisodes(snapshot.seasons, snapshot.episodes);
 
       toast.success(
         `已還原 ${snapshot.projects.length} 個專案、${snapshot.frames.length} 格分鏡、${snapshot.assets.length} 個資產`
