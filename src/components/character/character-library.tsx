@@ -321,7 +321,7 @@ function AssetEditorBody({
   const generateSheet = useGenerateCharacterSheet();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 初值來自 props;child 以 key 重掛,切換角色自動重新初始化,不需 effect
+  // 初值來自 props;child 以 key 重掛,切換資產自動重新初始化,不需 effect
   const [name, setName] = useState(asset?.name ?? "");
   const [kind, setKind] = useState<AssetKind>(asset?.kind ?? "character");
   const [type, setType] = useState<CharacterAssetType>(asset?.type ?? "actor");
@@ -345,7 +345,7 @@ function AssetEditorBody({
 
   function handleSave() {
     if (!name.trim() || !appearance.trim()) {
-      toast.error("請填寫角色名稱與外觀描述");
+      toast.error("請填寫名稱與外觀描述");
       return;
     }
     // 歸屬只在服裝有意義:改成其他種類時一併清掉,免得留下看不見的舊值
@@ -374,7 +374,7 @@ function AssetEditorBody({
 
   async function handleGenerate() {
     if (!asset) {
-      toast.error("請先儲存角色，再生成設定圖");
+      toast.error("請先儲存資產，再生成設定圖");
       return;
     }
     // 先把當前編輯內容存起來,設定圖才會依最新外觀生成
@@ -429,7 +429,11 @@ function AssetEditorBody({
   return (
     <>
       <DialogHeader>
-        <DialogTitle>{isEdit ? "編輯角色" : "新增角色"}</DialogTitle>
+        {/* 標題跟著種類走 —— 這個對話框早就不只建角色了,寫死「角色」會誤導 */}
+        <DialogTitle>
+          {isEdit ? "編輯" : "新增"}
+          {ASSET_KIND_LABELS[kind]}
+        </DialogTitle>
       </DialogHeader>
 
       <div className="space-y-4">

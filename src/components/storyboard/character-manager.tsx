@@ -66,16 +66,19 @@ export function CharacterManager({ projectId, rail }: CharacterManagerProps) {
       <DialogTrigger asChild>
         <ToolButton
           icon={Users}
-          label="角色設定"
+          label="本片角色表"
           rail={rail}
           badge={characters.length}
         />
       </DialogTrigger>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>角色設定</DialogTitle>
+          <DialogTitle>本片角色表</DialogTitle>
           <p className="text-sm text-muted-foreground">
-            本專案的角色，用於九宮格 / 提示詞複製。可從「人物資產庫」一鍵帶入常用角色。
+            <strong className="text-foreground">只是這個專案的文字備註</strong>，
+            供九宮格與提示詞複製時帶上角色描述。
+            <br />
+            要讓角色在生圖時真的長得一致，是用「資產庫」的參考圖 —— 兩者是不同的東西。
           </p>
         </DialogHeader>
 
@@ -84,7 +87,7 @@ export function CharacterManager({ projectId, rail }: CharacterManagerProps) {
             <div className="flex items-center justify-between">
               <Label className="flex items-center gap-1.5 text-xs font-medium">
                 <Library className="h-3.5 w-3.5" />
-                從人物資產庫加入
+                從資產庫帶入名稱與外觀
               </Label>
               <Link
                 href="/characters"
@@ -95,7 +98,7 @@ export function CharacterManager({ projectId, rail }: CharacterManagerProps) {
             </div>
             {globalAssets.length === 0 ? (
               <p className="text-[11px] text-muted-foreground">
-                資產庫還沒有角色。到「人物資產」建立可跨專案重用的角色。
+                資產庫還沒有人物。到「資產庫」建立可跨專案重用、能帶參考圖的角色。
               </p>
             ) : (
               <div className="flex flex-wrap gap-1.5">
