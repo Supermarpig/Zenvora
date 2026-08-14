@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { useEpisodeStore } from "@/stores/use-episode-store";
 import { useFrameStore } from "@/stores/use-frame-store";
+import { ToolButton } from "@/components/storyboard/tool-button";
 
 /**
  * 季 / 集管理。
@@ -25,7 +26,13 @@ import { useFrameStore } from "@/stores/use-frame-store";
  * 刪除季/集**不刪分鏡**,只把分鏡改回「未指定」(直接掛在專案下)。
  * 刪掉一個章節就連內容一起消失太意外,而且不可復原。
  */
-export function EpisodeManagerDialog({ projectId }: { projectId: string }) {
+export function EpisodeManagerDialog({
+  projectId,
+  rail,
+}: {
+  projectId: string;
+  rail?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const [newSeason, setNewSeason] = useState("");
   const [newEpisode, setNewEpisode] = useState<Record<string, string>>({});
@@ -82,15 +89,13 @@ export function EpisodeManagerDialog({ projectId }: { projectId: string }) {
 
   return (
     <>
-      <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
-        <Layers className="mr-1.5 h-4 w-4" />
-        季 / 集
-        {seasons.length > 0 && (
-          <span className="ml-1.5 rounded-full bg-primary px-1.5 text-[10px] text-primary-foreground">
-            {seasons.length}
-          </span>
-        )}
-      </Button>
+      <ToolButton
+        icon={Layers}
+        label="季 / 集"
+        rail={rail}
+        badge={seasons.length}
+        onClick={() => setOpen(true)}
+      />
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-[600px]">

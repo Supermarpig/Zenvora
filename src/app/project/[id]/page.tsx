@@ -8,6 +8,7 @@ import { useFrameStore } from "@/stores/use-frame-store";
 import { useProjectStoreHydrated } from "@/hooks/use-project-hydrated";
 import { StoryboardCanvas } from "@/components/storyboard/storyboard-canvas";
 import { StoryboardToolbar } from "@/components/storyboard/storyboard-toolbar";
+import { StoryboardRail } from "@/components/storyboard/storyboard-rail";
 import { FrameEditor } from "@/components/storyboard/frame-editor";
 
 export default function StoryboardPage({
@@ -44,8 +45,11 @@ export default function StoryboardPage({
         projectName={project.name}
         onAddFrame={handleAddFrame}
       />
-      <div className="flex-1">
-        <StoryboardCanvas projectId={id} />
+      <div className="flex min-h-0 flex-1">
+        <StoryboardRail projectId={id} projectName={project.name} />
+        <div className="min-w-0 flex-1">
+          <StoryboardCanvas projectId={id} />
+        </div>
       </div>
       <FrameEditor />
     </div>

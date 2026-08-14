@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Plus, Trash2, Users, Check, Library } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { ToolButton } from "./tool-button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -21,9 +22,11 @@ import { CHARACTER_ASSET_TYPE_LABELS, type CharacterAsset } from "@/lib/schemas"
 
 interface CharacterManagerProps {
   projectId: string;
+  /** true = 左側工具欄的純圖示樣式 */
+  rail?: boolean;
 }
 
-export function CharacterManager({ projectId }: CharacterManagerProps) {
+export function CharacterManager({ projectId, rail }: CharacterManagerProps) {
   const project = useProjectStore((s) => s.getProject(projectId));
   const addCharacter = useProjectStore((s) => s.addCharacter);
   const updateCharacter = useProjectStore((s) => s.updateCharacter);
@@ -61,15 +64,12 @@ export function CharacterManager({ projectId }: CharacterManagerProps) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Users className="mr-1.5 h-4 w-4" />
-          角色設定
-          {characters.length > 0 && (
-            <span className="ml-1.5 rounded-full bg-primary px-1.5 text-[10px] text-primary-foreground">
-              {characters.length}
-            </span>
-          )}
-        </Button>
+        <ToolButton
+          icon={Users}
+          label="角色設定"
+          rail={rail}
+          badge={characters.length}
+        />
       </DialogTrigger>
       <DialogContent className="max-w-lg">
         <DialogHeader>

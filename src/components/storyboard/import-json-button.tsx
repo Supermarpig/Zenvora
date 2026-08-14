@@ -1,10 +1,10 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { FileUp, Loader2 } from "lucide-react";
+import { FileUp } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { Button } from "@/components/ui/button";
+import { ToolButton } from "./tool-button";
 import { useFrameStore } from "@/stores/use-frame-store";
 import {
   CAMERA_MOVEMENTS,
@@ -39,7 +39,13 @@ function extractList(raw: unknown): unknown[] {
   throw new Error("找不到分鏡陣列(需要 zenvoraFrames、frames,或檔案本身是陣列)");
 }
 
-export function ImportJsonButton({ projectId }: { projectId: string }) {
+export function ImportJsonButton({
+  projectId,
+  rail,
+}: {
+  projectId: string;
+  rail?: boolean;
+}) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isImporting, setIsImporting] = useState(false);
   const appendFrames = useFrameStore((s) => s.appendFrames);
@@ -104,19 +110,14 @@ export function ImportJsonButton({ projectId }: { projectId: string }) {
         className="hidden"
         onChange={handleFile}
       />
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => inputRef.current?.click()}
+      <ToolButton
+        icon={FileUp}
+        label={isImporting ? "匯入中" : "匯入 JSON"}
+        rail={rail}
+        loading={isImporting}
         disabled={isImporting}
-      >
-        {isImporting ? (
-          <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-        ) : (
-          <FileUp className="mr-1.5 h-4 w-4" />
-        )}
-        {isImporting ? "匯入中" : "匯入 JSON"}
-      </Button>
+        onClick={() => inputRef.current?.click()}
+      />
     </>
   );
 }

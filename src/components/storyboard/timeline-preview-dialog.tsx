@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { GalleryHorizontalEnd, Play, Pause, SkipBack } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ToolButton } from "./tool-button";
 import {
   Dialog,
   DialogContent,
@@ -44,9 +45,11 @@ const RENDER_LABELS: Record<RenderStatus, string> = {
 export function TimelinePreviewDialog({
   projectId,
   projectName,
+  rail,
 }: {
   projectId: string;
   projectName: string;
+  rail?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [timeline, setTimeline] = useState<ExportTimeline | null>(null);
@@ -131,10 +134,12 @@ export function TimelinePreviewDialog({
 
   return (
     <>
-      <Button variant="outline" size="sm" onClick={handleOpen}>
-        <GalleryHorizontalEnd className="mr-1.5 h-4 w-4" />
-        時間軸
-      </Button>
+      <ToolButton
+        icon={GalleryHorizontalEnd}
+        label="時間軸"
+        rail={rail}
+        onClick={handleOpen}
+      />
 
       <Dialog
         open={open}

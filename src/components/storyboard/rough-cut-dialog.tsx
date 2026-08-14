@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Scissors, Loader2, ArrowRightLeft, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { ToolButton } from "./tool-button";
 import {
   Dialog,
   DialogContent,
@@ -25,7 +26,13 @@ import {
  * 不可接受的 —— 所以沒有「全部接受」按鈕,而且 cut 的按鈕用 destructive
  * 樣式並寫明「刪除」,不用「接受」這種讓人以為可以反悔的字。
  */
-export function RoughCutDialog({ projectId }: { projectId: string }) {
+export function RoughCutDialog({
+  projectId,
+  rail,
+}: {
+  projectId: string;
+  rail?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState("");
@@ -108,10 +115,12 @@ export function RoughCutDialog({ projectId }: { projectId: string }) {
 
   return (
     <>
-      <Button variant="outline" size="sm" onClick={handleOpen}>
-        <Scissors className="mr-1.5 h-4 w-4" />
-        AI 粗剪
-      </Button>
+      <ToolButton
+        icon={Scissors}
+        label="AI 粗剪"
+        rail={rail}
+        onClick={handleOpen}
+      />
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-[620px]">

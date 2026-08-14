@@ -4,6 +4,7 @@ import { useState } from "react";
 import { BookOpen, Loader2, UserPlus, Check } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { ToolButton } from "./tool-button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -27,7 +28,13 @@ import { generateStoryboard } from "@/actions/generate-storyboard";
  *
  * 第二階段直接複用 generate-storyboard(已經很成熟),不另寫一套拆鏡邏輯。
  */
-export function NovelImportDialog({ projectId }: { projectId: string }) {
+export function NovelImportDialog({
+  projectId,
+  rail,
+}: {
+  projectId: string;
+  rail?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const [stage, setStage] = useState<"input" | "review">("input");
@@ -127,17 +134,15 @@ export function NovelImportDialog({ projectId }: { projectId: string }) {
 
   return (
     <>
-      <Button
-        variant="outline"
-        size="sm"
+      <ToolButton
+        icon={BookOpen}
+        label="匯入小說"
+        rail={rail}
         onClick={() => {
           reset();
           setOpen(true);
         }}
-      >
-        <BookOpen className="mr-1.5 h-4 w-4" />
-        匯入小說
-      </Button>
+      />
 
       <Dialog
         open={open}

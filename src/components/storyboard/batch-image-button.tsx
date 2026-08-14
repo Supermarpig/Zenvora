@@ -1,11 +1,17 @@
 "use client";
 
-import { Images, Loader2 } from "lucide-react";
+import { Images } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import { ToolButton } from "./tool-button";
 import { useBatchGenerateImages } from "@/hooks/use-batch-generate-images";
 
-export function BatchImageButton({ projectId }: { projectId: string }) {
+export function BatchImageButton({
+  projectId,
+  rail,
+}: {
+  projectId: string;
+  rail?: boolean;
+}) {
   const { progress, run, isRunning } = useBatchGenerateImages(projectId);
 
   async function handleClick() {
@@ -24,20 +30,17 @@ export function BatchImageButton({ projectId }: { projectId: string }) {
   }
 
   return (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={handleClick}
+    <ToolButton
+      icon={Images}
+      label={
+        isRunning && progress
+          ? `生圖中 ${progress.done}/${progress.total}`
+          : "批次生圖"
+      }
+      rail={rail}
+      loading={isRunning}
       disabled={isRunning}
-    >
-      {isRunning ? (
-        <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-      ) : (
-        <Images className="mr-1.5 h-4 w-4" />
-      )}
-      {isRunning && progress
-        ? `生圖中 ${progress.done}/${progress.total}`
-        : "批次生圖"}
-    </Button>
+      onClick={handleClick}
+    />
   );
 }

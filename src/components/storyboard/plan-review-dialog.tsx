@@ -11,6 +11,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ToolButton } from "./tool-button";
 import {
   Dialog,
   DialogContent,
@@ -66,7 +67,13 @@ const SEVERITY_META: Record<
  *
  * 刻意只做建議、不阻擋 —— 有 blocker 也讓使用者自己決定要不要照樣生成。
  */
-export function PlanReviewDialog({ projectId }: { projectId: string }) {
+export function PlanReviewDialog({
+  projectId,
+  rail,
+}: {
+  projectId: string;
+  rail?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const [review, setReview] = useState<PlanReview | null>(null);
   const [aiIssues, setAiIssues] = useState<AiPlanIssue[] | null>(null);
@@ -177,10 +184,12 @@ export function PlanReviewDialog({ projectId }: { projectId: string }) {
 
   return (
     <>
-      <Button variant="outline" size="sm" onClick={handleOpen}>
-        <ClipboardCheck className="mr-1.5 h-4 w-4" />
-        計畫預審
-      </Button>
+      <ToolButton
+        icon={ClipboardCheck}
+        label="計畫預審"
+        rail={rail}
+        onClick={handleOpen}
+      />
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-[600px]">
