@@ -119,6 +119,29 @@ export function buildSrt(timeline: ExportTimeline): string {
   return blocks.join("\n\n") + (blocks.length ? "\n" : "");
 }
 
+/**
+ * SRT 的「Windows / 剪映 友善版」位元組:**UTF-8 BOM + CRLF 換行**。
+ *
+ * 為什麼要多一份而不是直接改掉原本那份:中文圈的剪輯軟體在讀無 BOM 的
+ * UTF-8 時,有時會猜成 GBK 而讓中文變亂碼;但也有版本反而被 BOM 卡住。
+ * **無法在沒有剪映的環境下驗證是哪一種**,所以兩份都放 —— SRT 只有幾 KB,
+ * 使用者遇到亂碼換另一份就好,不會整包白做。
+ *
+ * 原本的 `subtitle.srt`(無 BOM、LF)行為完全不變。
+ */
+export function buildCompatSrt(srt: string): Uint8Array<ArrayBuffer> {
+  if (!srt) return new Uint8Array(0) as Uint8Array<ArrayBuffer>;
+
+  // 先把既有的 CRLF 收斂成 LF 再統一轉換,避免變成 \r\r\n
+  const crlf = srt.replace(/\r\n/g, "\n").replace(/\n/g, "\r\n");
+  const body = new TextEncoder().encode(crlf);
+
+  const out = new Uint8Array(3 + body.length) as Uint8Array<ArrayBuffer>;
+  out.set([0xef, 0xbb, 0xbf], 0); // UTF-8 BOM
+  out.set(body, 3);
+  return out;
+}
+
 /** 壓縮包內的操作說明,讓下載後不用回頭查文件 */
 export function buildReadme(timeline: ExportTimeline): string {
   const missing = timeline.clips.filter((c) => !c.videoFile).map((c) => c.shot);
@@ -129,14 +152,16 @@ export function buildReadme(timeline: ExportTimeline): string {
     `鏡次數:${timeline.clips.length}　總長:${timeline.totalDurationSec} 秒　時間軸:${timeline.fps}fps`,
     "",
     "【檔案說明】",
-    "timeline.json  完整時間軸資料(鏡次、起始秒數、時長、對白、運鏡、提示詞)",
-    "subtitle.srt   字幕檔,時間碼已對齊時間軸",
-    "assets/        素材,檔名編號即為鏡次順序",
+    "timeline.json       完整時間軸資料(鏡次、起始秒數、時長、對白、運鏡、提示詞)",
+    "subtitle.srt        字幕檔,時間碼已對齊時間軸(UTF-8)",
+    "subtitle-bom.srt    同一份字幕的 Windows 相容版(UTF-8 BOM + CRLF)",
+    "assets/             素材,檔名編號即為鏡次順序",
     "",
     "【匯入剪映步驟】",
     "1. 解壓縮後,把 assets 資料夾內的檔案全選拖進剪映素材區",
     "2. 依檔名編號 001、002… 依序拖到時間軸(編號就是分鏡順序)",
-    "3. 字幕 → 本地字幕 → 匯入 subtitle.srt,時間碼會自動對上",
+    "3. 匯入字幕:文字 → 本地字幕(不同版本可能叫「導入字幕」),選 subtitle.srt",
+    "   → 若中文變成亂碼,改用 subtitle-bom.srt,同一份內容不同編碼",
     "4. timeline.json 內有每顆鏡頭的運鏡與提示詞,調整轉場時可對照",
     "",
     missing.length

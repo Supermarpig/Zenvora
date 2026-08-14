@@ -10,6 +10,7 @@ import { createZip, type ZipEntry } from "@/lib/zip";
 import {
   buildTimeline,
   buildSrt,
+  buildCompatSrt,
   buildReadme,
   clipBaseName,
   type FrameAssetFlags,
@@ -110,9 +111,16 @@ export function ExportTimelineButton({
         { name: "使用說明.txt", data: encoder.encode(buildReadme(timeline)) },
         ...assetEntries,
       ];
-      // 全片無對白時不放空字幕檔,避免匯入剪映時報錯
+      // 全片無對白時不放空字幕檔,避免匯入剪映時報錯。
+      // 同一份字幕放兩種編碼:剪映對 UTF-8 有無 BOM 的容忍度依版本而異,
+      // 無法在沒有剪映的環境驗證,所以兩份都給(見 buildCompatSrt 註解)。
       if (srt) {
-        entries.splice(1, 0, { name: "subtitle.srt", data: encoder.encode(srt) });
+        entries.splice(
+          1,
+          0,
+          { name: "subtitle.srt", data: encoder.encode(srt) },
+          { name: "subtitle-bom.srt", data: buildCompatSrt(srt) }
+        );
       }
 
       triggerDownload(createZip(entries), `${projectName}-剪映素材包.zip`);

@@ -4,6 +4,7 @@ import {
   buildTimeline,
   buildSrt,
   clipBaseName,
+  buildCompatSrt,
   type FrameAssetFlags,
 } from "../src/lib/timeline-export.ts";
 import type { Frame } from "../src/lib/schemas.ts";
@@ -126,4 +127,43 @@ test("clipBaseName 補零到三位", () => {
   assert.equal(clipBaseName(1), "001");
   assert.equal(clipBaseName(10), "010");
   assert.equal(clipBaseName(100), "100");
+});
+
+test("buildCompatSrt:加 UTF-8 BOM 且換行改成 CRLF", () => {
+  const srt = "1\n00:00:00,000 --> 00:00:05,000\n小雨：你好\n";
+  const bytes = buildCompatSrt(srt);
+
+  // 前三個位元組必須是 BOM
+  assert.deepEqual(Array.from(bytes.slice(0, 3)), [0xef, 0xbb, 0xbf]);
+
+  const text = new TextDecoder().decode(bytes.slice(3));
+  assert.equal(text, "1\r\n00:00:00,000 --> 00:00:05,000\r\n小雨：你好\r\n");
+});
+
+test("buildCompatSrt:既有的 CRLF 不會變成 \\r\\r\\n", () => {
+  const already = "1\r\n00:00:00,000 --> 00:00:05,000\r\n台詞\r\n";
+  const text = new TextDecoder().decode(buildCompatSrt(already).slice(3));
+  assert.ok(!text.includes("\r\r"));
+  assert.equal(text, already);
+});
+
+test("buildCompatSrt:空字串回傳空陣列(不產生只有 BOM 的檔案)", () => {
+  assert.equal(buildCompatSrt("").length, 0);
+});
+
+test("buildCompatSrt 的內容與 buildSrt 逐字相同(只差編碼)", () => {
+  const timeline = buildTimeline(
+    "p",
+    [
+      frame({ order: 0, dialogue: "台詞一", speaker: "小雨" }),
+      frame({ order: 1, dialogue: "台詞二" }),
+    ],
+    {},
+    "t"
+  );
+  const srt = buildSrt(timeline);
+  const decoded = new TextDecoder()
+    .decode(buildCompatSrt(srt).slice(3))
+    .replace(/\r\n/g, "\n");
+  assert.equal(decoded, srt);
 });
