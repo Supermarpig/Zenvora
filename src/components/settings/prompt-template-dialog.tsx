@@ -15,6 +15,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { usePromptTemplateStore } from "@/stores/use-prompt-template-store";
+import type { SettingsDialogProps } from "./settings-dialog-props";
 import {
   PROMPT_TEMPLATE_IDS,
   TEMPLATE_META,
@@ -37,7 +38,11 @@ const PREVIEW_VARS: Record<string, string> = {
  * 只開放結構單純的三個模板 —— buildVeoPrompt / buildGridPrompt 有大量條件
  * 分支,硬塞進平面模板只會比現在更難改。
  */
-export function PromptTemplateDialog() {
+export function PromptTemplateDialog({
+  open,
+  onOpenChange,
+  hideTrigger,
+}: SettingsDialogProps = {}) {
   const overrides = usePromptTemplateStore((s) => s.overrides);
   const setTemplate = usePromptTemplateStore((s) => s.setTemplate);
   const revertToBuiltIn = usePromptTemplateStore((s) => s.revertToBuiltIn);
@@ -63,13 +68,21 @@ export function PromptTemplateDialog() {
   }
 
   return (
-    <Dialog onOpenChange={(o) => !o && setDraft(null)}>
-      <DialogTrigger asChild>
-        <Button variant="outline">
-          <FileText className="mr-1.5 h-4 w-4" />
-          Prompt 模板
-        </Button>
-      </DialogTrigger>
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        if (!o) setDraft(null);
+        onOpenChange?.(o);
+      }}
+    >
+      {!hideTrigger && (
+        <DialogTrigger asChild>
+          <Button variant="outline">
+            <FileText className="mr-1.5 h-4 w-4" />
+            Prompt 模板
+          </Button>
+        </DialogTrigger>
+      )}
 
       <DialogContent className="max-h-[88vh] overflow-y-auto sm:max-w-[680px]">
         <DialogHeader>

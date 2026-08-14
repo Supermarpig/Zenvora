@@ -31,6 +31,7 @@ import {
   resolveTextModel,
 } from "@/lib/model-config";
 import { customModelSchema } from "@/lib/schemas";
+import type { SettingsDialogProps } from "./settings-dialog-props";
 
 /**
  * 模型設定。換 model id 原本要改三個檔案再重新部署 ——
@@ -39,7 +40,11 @@ import { customModelSchema } from "@/lib/schemas";
  * 金鑰刻意不在這裡:localStorage 任何同源腳本都讀得到,金鑰一律留在
  * 伺服器端環境變數。
  */
-export function ModelConfigDialog() {
+export function ModelConfigDialog({
+  open,
+  onOpenChange,
+  hideTrigger,
+}: SettingsDialogProps = {}) {
   const imageModel = useModelConfigStore((s) => s.imageModel);
   const videoModel = useModelConfigStore((s) => s.videoModel);
   const textModel = useModelConfigStore((s) => s.textModel);
@@ -75,13 +80,15 @@ export function ModelConfigDialog() {
   }
 
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="outline">
-          <Settings2 className="mr-1.5 h-4 w-4" />
-          模型設定
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {!hideTrigger && (
+        <DialogTrigger asChild>
+          <Button variant="outline">
+            <Settings2 className="mr-1.5 h-4 w-4" />
+            模型設定
+          </Button>
+        </DialogTrigger>
+      )}
 
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-[560px]">
         <DialogHeader>

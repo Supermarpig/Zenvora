@@ -38,6 +38,7 @@ import {
   restoreRawValue,
 } from "@/lib/db";
 import type { Snapshot } from "@/lib/schemas";
+import type { SettingsDialogProps } from "./settings-dialog-props";
 
 const ALL = "__all__";
 
@@ -56,8 +57,15 @@ function formatSize(bytes: number): string {
  * 還原**只新增與覆蓋,不刪除**備份裡沒有的東西 —— 否則使用者匯入一個舊的
  * 單專案備份就會把其他專案清掉。
  */
-export function BackupDialog() {
-  const [open, setOpen] = useState(false);
+export function BackupDialog({
+  open: openProp,
+  onOpenChange,
+  hideTrigger,
+}: SettingsDialogProps = {}) {
+  const [openState, setOpenState] = useState(false);
+  // 受控時聽外部,否則自己管 —— 兩種用法都要能跑
+  const open = openProp ?? openState;
+  const setOpen = onOpenChange ?? setOpenState;
   const [scope, setScope] = useState<string>(ALL);
   const [busy, setBusy] = useState(false);
   const [pending, setPending] = useState<ParsedSnapshot | null>(null);
@@ -209,12 +217,14 @@ export function BackupDialog() {
 
   return (
     <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setPending(null); }}>
-      <DialogTrigger asChild>
-        <Button variant="outline">
-          <Archive className="mr-1.5 h-4 w-4" />
-          備份
-        </Button>
-      </DialogTrigger>
+      {!hideTrigger && (
+        <DialogTrigger asChild>
+          <Button variant="outline">
+            <Archive className="mr-1.5 h-4 w-4" />
+            備份
+          </Button>
+        </DialogTrigger>
+      )}
 
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-[560px]">
         <DialogHeader>
