@@ -23,6 +23,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -120,6 +126,25 @@ export function FrameEditor() {
 
   const isOpen = !!selectedFrameId && !!frame;
 
+  /**
+   * 影片分頁的狀態標記。讀 `frame.videoStatus`(已 persist)而不是再開一份
+   * `useVideoGeneration` —— 那會讓同一格多一組輪詢訂閱。
+   * 沒有標記時整個 span 不渲染,分頁標籤維持乾淨。
+   */
+  const videoBadge = ((): { text: string; tone: string } | null => {
+    switch (frame?.videoStatus) {
+      case "queued":
+      case "running":
+        return { text: "生成中", tone: "text-muted-foreground" };
+      case "succeeded":
+        return { text: "已完成", tone: "text-emerald-600 dark:text-emerald-400" };
+      case "failed":
+        return { text: "失敗", tone: "text-destructive" };
+      default:
+        return null;
+    }
+  })();
+
   return (
     <Sheet
       open={isOpen}
@@ -157,8 +182,31 @@ export function FrameEditor() {
               <div className="grid gap-6 @2xl:grid-cols-2">
                 {/* 單欄時限寬,否則 aspect-video 預覽框會跟著容器寬度長到 400px 高 */}
                 <div className="max-w-[560px] space-y-4 @2xl:max-w-none">
-                  <ImageGenerator frameId={frame.id} />
-                  <VideoPanel frameId={frame.id} />
+                  {/* 關鍵幀與影片改分頁:兩個都是帶預覽框的重面板,疊在一起會讓
+                      整個編輯器要滾 1.6 屏。同一時間你只在做其中一件事 ——
+                      但影片是非同步任務,所以分頁標籤要帶狀態,否則跑完不會被發現。 */}
+                  <Tabs defaultValue="keyframe">
+                    <TabsList className="w-full">
+                      <TabsTrigger value="keyframe" className="flex-1">
+                        關鍵幀
+                      </TabsTrigger>
+                      <TabsTrigger value="video" className="flex-1">
+                        影片
+                        {videoBadge && (
+                          <span className={`ml-1.5 text-[10px] ${videoBadge.tone}`}>
+                            {videoBadge.text}
+                          </span>
+                        )}
+                      </TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="keyframe" className="mt-3">
+                      <ImageGenerator frameId={frame.id} />
+                    </TabsContent>
+                    <TabsContent value="video" className="mt-3">
+                      <VideoPanel frameId={frame.id} />
+                    </TabsContent>
+                  </Tabs>
                 </div>
 
                 <div className="space-y-4">
