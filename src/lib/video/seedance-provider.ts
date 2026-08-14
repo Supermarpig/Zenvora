@@ -1,5 +1,14 @@
 /**
- * Seedance(即夢 2.0)影片 Provider —— 火山引擎 CV 官方 API。
+ * 即夢 2.0(Jimeng VGFM)影片 Provider —— 火山引擎 CV 官方 API。
+ *
+ * ⚠️ **這不是 Seedance。** 兩者都是字節的影片模型,但走完全不同的 API:
+ * 即夢在 `visual.volcengineapi.com`(req_key `jimeng_vgfm_*`,火山 v4 簽章),
+ * Seedance 2.0 在**火山方舟(Ark)**(Bearer API key,不同 payload 與輪詢)。
+ * 檔名與 provider id 仍叫 seedance 是歷史遺留 —— 改名要動 `VIDEO_MODELS` 的
+ * `providerId` 與持久化資料,不值得。
+ *
+ * 只有 Seedance 2.0 支援參考影片(動作遷移),即夢沒有。要接 Seedance 2.0
+ * 是**新增一個 provider**,見 `docs/bigbanana-parity-spec.md` §19。
  *
  * 移植/改寫自開源專案 wind-comic(MIT, © 2026 ChrisChen667788),
  * 適配成本專案的 `VideoProvider`(submit / poll)介面。

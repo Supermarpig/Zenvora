@@ -1,6 +1,7 @@
 /**
  * 火山引擎(Volcengine)Volc4 請求簽名 —— AWS SigV4 衍生版,基於 HMAC-SHA256。
- * Seedance / 即夢 CV 官方 API 需要此簽名。
+ * 即夢(Jimeng VGFM)CV 官方 API 需要此簽名。Seedance 2.0 走火山方舟,
+ * 用的是 Bearer API key 不是這套簽章 —— 見 seedance-provider.ts 檔頭。
  *
  * 演算法參考官方文件:https://www.volcengine.com/docs/6369/67269
  * 移植自開源專案 wind-comic(MIT, © 2026 ChrisChen667788),為本專案介面調整。

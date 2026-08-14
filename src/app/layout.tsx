@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "FrameForge - AI 分鏡鍛造所",
-  description: "AI 驅動的分鏡製作平台，串接 Nano Banana API 生圖，產出 Seedance 2.0 影片提示詞",
+  description: "AI 驅動的分鏡製作平台，串接 Nano Banana API 生圖，可生成 Veo / 即夢 / Kling 影片",
 };
 
 export default function RootLayout({

@@ -283,7 +283,7 @@ export function VideoPanel({ frameId }: VideoPanelProps) {
 
       <p className="text-[11px] leading-relaxed text-muted-foreground">
         任務在雲端執行,關閉面板不影響。各引擎需在 .env 設好對應金鑰(Veo→Google
-        AI、Seedance→火山 JIMENG_AK/SK)。
+        AI、即夢→火山 JIMENG_AK/SK、Kling→KLING_ACCESS_KEY/SECRET_KEY)。
       </p>
     </div>
   );

@@ -49,9 +49,19 @@ export const VIDEO_MODELS: VideoModelOption[] = [
     creditCost: 15,
   },
   {
+    // ⚠️ 這一筆是**即夢 VGFM**,不是 Seedance 2.0 —— 兩者都是字節的產品但走完全不同的
+    // API:即夢在 visual.volcengineapi.com(req_key `jimeng_vgfm_*`),Seedance 2.0 在
+    // 火山方舟(Ark)。標籤先前寫「Seedance 2.0」是誤導,已改正。
+    //
+    // `model` 這個字串**刻意不改** —— 它是註冊表的 key 且被持久化在
+    // `frame.videoModel` 與 model-config store 裡,改了會讓既有資料查不到選項,
+    // 而 `getProviderForModel` 對未知 model 會靜默退回 veo(送錯 provider)。
+    //
+    // 真要接 Seedance 2.0(它才支援參考影片/動作遷移)是**新增一個 provider**,
+    // 見 bigbanana-parity-spec.md §19。
     providerId: "seedance",
     model: "seedance-2.0",
-    label: "Seedance 2.0（字節/火山 · ~$0.14/s）",
+    label: "即夢 2.0（字節/火山 · ~$0.14/s）",
     supportsImage: true,
     supportsAudio: true,
     creditCost: 14,
