@@ -31,7 +31,7 @@ Next.js 16 + React 19 + Zustand + shadcn/ui。**純前端,無後端資料庫** �
 pnpm install               # node_modules 可能不存在
 npx tsc --noEmit           # 必須全綠(含 tests/)
 npx eslint src/ tests/     # 不可新增 error/warning
-pnpm test                  # 97 個單元測試,必須全過
+pnpm test                  # 123 個單元測試,必須全過
 ```
 
 測試用 Node 內建 `node:test` + `--experimental-strip-types`(需 Node 22+),**沒有裝 vitest 或任何測試框架**。`tests/` 目前有 9 個檔案,涵蓋 `zip.ts`、`timeline-export.ts`(含字幕的 BOM/CRLF 版)、`plan-review.ts`、`mention.ts`、`storyboard-prompt.ts`(宮格排版)、`prompt-template.ts`、`snapshot.ts`、`veo-prompt.ts`、`video/veo-provider.ts`(payload 防回歸)。`grid-split.ts` 需要 canvas 所以測不到。
@@ -56,6 +56,7 @@ dev server 用 `preview_start` 的 `frameforge-dev`(`.claude/launch.json`,port 3
 
 - localStorage key:`frameforge-projects`、`frameforge-frames`、`frameforge-character-assets`(**version 1**,v0 資料會被 migrate 補上 `kind`)、`frameforge-episodes`(季/集,沒建立過就不存在)、`frameforge-model-config`、`frameforge-prompt-templates`
 - IndexedDB:`keyval-store` / `keyval`,key 為 `image-{frameId}`、`endimage-{frameId}`(首尾插值的結束幀)、`video-{frameId}`、`asset-{assetId}-{n}`
+- `frameforge-frames` 是 **version 1**(v0 的 `imageBase64Key` 會被 migrate 成 `hasImage` + `imageVersion`)
 
 **兩個踩過的坑**:
 
@@ -68,14 +69,17 @@ dev server 用 `preview_start` 的 `frameforge-dev`(`.claude/launch.json`,port 3
 
 - 註解用**繁體中文**,寫「為什麼」而不是「做什麼」。
 - **不裝第三方套件**:zip 打包是手寫的 store-mode(`src/lib/zip.ts`)、九宮格切圖用原生 Canvas(`src/lib/grid-split.ts`)。需要新套件時先問。
+  **唯一的例外是 `@ffmpeg/ffmpeg` + `@ffmpeg/util`**(2026-08-14 經使用者同意),用於瀏覽器內合成成片 —— 這個沒有手寫的替代品。
 - **最小化修改**,不順手重構無關的 function。發現範圍外值得改的地方,用講的提出來讓使用者決定。
 - 資料驗證一律走 zod schema(`src/lib/schemas.ts`),匯入類功能**整批驗證、失敗全拒**,不要部分匯入留下半殘狀態。
 - API 金鑰只在 server action / route handler 使用,**前端與 localStorage 一律不碰 key**。
 
 ## 幾個容易誤解的設計
 
-- `imageBase64Key` 全專案只當「有沒有圖」的 truthy 標記,實際載入一律走 `loadImage(frame.id)`。九宮格切圖會在它後面加 `#{timestamp}` 當版本號觸發 revalidate。(這個命名問題是已知技術債 D3,待與資產遷移同批修。)
-- `useImageStorage(frameId, revalidateKey)` 的第二參數:外部直接寫 IndexedDB 時要傳會變動的值,否則畫面停在舊狀態。(技術債 D4。)
+- **`imageBase64Key` 已棄用**(D3 已遷移):現在是 `hasImage`(boolean)+ `imageVersion`(number)。舊欄位**刻意留在 `frameSchema` 裡**,因為舊備份的 JSON 還是舊格式,拿掉的話 zod 會把它剝掉、還原後圖片變成「沒有圖」。換算走 `lib/frame-migrate.ts`,**store persist migrate 與備份還原共用同一份** —— 只改一邊會讓匯入舊備份走到沒遷移的路。
+- **`useImageStorage(frameId)` 只吃一個參數**(D4 已修):版本號由 hook 自己從 store 讀。繞過 hook 直接寫 IndexedDB 的地方(九宮格切圖)要自己 bump `imageVersion`,或呼叫 store 的 `bumpImageVersion`。
+- **Prompt 的固定句可被使用者覆寫**(`PROMPT_FRAGMENT_IDS` / `FRAGMENT_META`)。與 `TEMPLATE_META` 分開:模板有變數、片段沒有。影片與宮格 prompt 的**結構留在程式裡**(哪一句在什麼條件出現是邏輯),只開放措辭 —— 所以不需要條件式模板語法。改內建片段的字串會讓既有專案重生的影片與舊的不一致,有防回歸測試盯著。
+- **成片用單執行緒的 ffmpeg.wasm core**(`lib/ffmpeg-compose.ts`),**刻意不加 COOP/COEP** —— 那組 header 只有多執行緒 core 需要,而它會影響整站。串流複製不重新編碼,所以各段編碼參數不一致時會失敗,那時降級回導出剪映。
 - **資產有 `kind` 與 `type` 兩個維度**:`kind` 是種類(character / scene / prop / costume),`type` 是角色子類(actor / presenter / reface)且只在 `kind === "character"` 時有意義。一致性指示句與參考圖 prompt 都依 `kind` 分歧 —— 對場景說「identical hairstyle」是雜訊,對房間生 turnaround 沒有意義。
 - **`src/lib/style-tables.ts` 是 style/mood 鏡頭語言的唯一來源**,`verbose` 給單鏡與影片、`compact` 給宮格。措辭改動會讓既有專案重生的圖跟舊圖不一致,別隨手改。
 - `frame-editor` 與 `prompt-row` 都是 **debounce 自動存**。`frame-editor` 的兩個 effect 依賴刻意避開 `frame` 物件(用 `selectedFrameId` 與序列化字串),否則會形成「存→新物件→reset→再存」的循環。
