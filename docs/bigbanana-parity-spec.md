@@ -1064,8 +1064,10 @@ const STYLE_LENS: Record<string, { verbose: string; compact: string }>
   **為此補了 `readZip`**(原本只有 createZip),只支援 store 模式並對 deflate 明確報錯,不回壞資料讓人以為匯入成功。
   匯入分兩階段:先解析顯示「會還原什麼」,確認後才寫入;**只新增與覆蓋,不刪除備份裡沒有的東西**(否則匯入舊的單專案備份會把其他專案清掉)。
   **完整 round-trip 實測**:建資料 → 匯出 → 清空全部 → 匯入 → 所有欄位與三個素材完整還原,圖片回到 data URL 字串、影片回到帶 mime 的 Blob
-- [ ] ffmpeg.wasm 成片:動態 import + 能力偵測 + 降級回剪映流程
-- [ ] COOP/COEP headers 加入後,**回歸測試生圖與影片下載代理**
+- [ ] ffmpeg.wasm 成片:動態 import + 能力偵測 + 降級回剪映流程 —— **卡在專案的套件政策**:ffmpeg.wasm 要裝 `@ffmpeg/ffmpeg` + `@ffmpeg/core`(約 30MB 的 wasm),而本專案的原則是不新增第三方套件(見 `CLAUDE.md`)。要做的話得先由你決定是否為了這一項破例。
+  另外兩個現實限制:① 加 COOP/COEP headers 是**全站**行為改變,而驗收要求回歸測試影片下載代理 —— 目前沒有影片可測(生影片無免費額度);② 沒有成片素材就無法驗證輸出是否真的能播。
+  **目前的替代路徑是導出剪映 JSON**,已完成且不需要任何額外依賴
+- [ ] COOP/COEP headers 加入後,**回歸測試生圖與影片下載代理** —— 與上一項同批,同樣卡住
 
 ### N5 專案層級(大)
 
@@ -1114,7 +1116,7 @@ const STYLE_LENS: Record<string, { verbose: string; compact: string }>
   同步寫回會與使用者的手動取消打架 —— 取消某個角色後,只要 prompt 還留著 `@` 就又被加回來,使用者無法表達「我知道有 @ 但這格不要帶它」。而 `castIds` 的語意是「手動選角」,`@` 是另一個來源,`composeCastPrompt` 已經取聯集,寫回等於把同一件事存兩份。
   使用者真正的困惑是「@ 到的角色算不算選上」,那是**顯示問題不是資料問題** —— 所以改成在 `CastPicker` 把被 `@` 引用的資產標上 `@` 圖示並高亮,tooltip 寫「場景描述已用 @ 引用，會自動帶入」。
   **實測**:第 1 鏡(prompt 同時 @ 兩個資產)兩顆 chip 都標記;第 2 鏡(只 @ 管家)只有管家標記、老宅書房不標記;三格的 `castIds` 全程保持 `[]` —— 確實沒有寫回任何資料
-- [ ] 更新 [`director-console-spec.md`](./director-console-spec.md) 的「實作進度」章節(目前停在 2026-08-12,見 §2)
+- [x] ~~更新 [`director-console-spec.md`](./director-console-spec.md) 的「實作進度」章節~~ —— 2026-08-13 更新。M0–M3 的現況改寫(含 t2v/i2v、資產庫泛化、導出剪映、不走 fal.ai),並明講**逐項進度只由本文件 §17 維護**,避免兩份清單各說各話
 
 ---
 
