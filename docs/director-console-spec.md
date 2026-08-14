@@ -8,23 +8,30 @@
 
 ## 0. TL;DR(給趕時間的人)
 
-- **現況**:專案目前只有「文生圖 / 圖生圖」是真的串了 API(Google Gemini)。Veo / Seedance / Flow 全部只是**產生 prompt 文字讓你手動貼**,沒有真的生影片。
+> ⚠️ **這一節描述的是 2026-08-12 立案當時的狀況,不是現況。** M0–M2 已完成,
+> 下面「沒有真的生影片」那句**已不成立**。現況看下一節「實作進度」。
+> 保留原文是為了讓後來的人看得出這份規格書當初要解的問題是什麼。
+
+- **現況(立案時)**:專案目前只有「文生圖 / 圖生圖」是真的串了 API(Google Gemini)。Veo / Seedance / Flow 全部只是**產生 prompt 文字讓你手動貼**,沒有真的生影片。
 - **要補的核心**:①真的影片生成端點 ②非同步任務(輪詢)③影片儲存 ④時間軸剪接。
 - **第一步(M0)**:接 Veo 圖生影片 + Provider 抽象層 + 任務輪詢 + 分鏡上影片預覽。打通一條線後,用 fal.ai 掛多引擎。
 - **三大用途是三條不同 pipeline**,難度:AI 漫劇(最近)< 帶貨影片(要數字人+TTS)< 影片換人物(要影生影/表演驅動)。
 
 ---
 
-## 實作進度 (2026-08-13)
+## 實作進度 (2026-08-14)
 
 > 逐項的完成狀態與實測記錄改由 [`bigbanana-parity-spec.md`](./bigbanana-parity-spec.md) §17 維護 ——
 > 那份是目前唯一在更新的進度清單。這裡只留與本文件 M0–M6 對應的摘要。
 
 - ✅ **M0 影片 pipeline**:`VideoProvider` 抽象 + Veo / Kling / Seedance 三個 provider + 任務 store/輪詢 + 下載代理 + 分鏡影片面板 + 節點影片標記。另加 **t2v / i2v 鏈路明確入口**(選 i2v 但沒有關鍵幀會直接報錯,不靜默改走 t2v)。
 - ✅ **M1 人物資產庫**:已泛化為**資產庫** —— 人物 / 場景 / 道具 / 服裝四種 `kind`,服裝可設定歸屬人物;prompt 內用 `@名稱` 引用,選角面板會標示哪些是被 `@` 帶入的。
-- ✅ **M2 時間軸**:時間軸預覽 + **導出剪映 JSON**(含 SRT)。ffmpeg.wasm 直接成片仍未做(見 parity spec §7)。
+- ✅ **M2 時間軸**:時間軸預覽 + **導出剪映素材包**(timeline.json + SRT + 素材)。字幕附兩種編碼(無 BOM 與 UTF-8 BOM+CRLF),因為剪映對 BOM 的容忍度依版本而異且無法在本機驗證。**刻意不產生剪映 draft_content.json** —— 該格式無官方文件且剪映 6 以上加密。ffmpeg.wasm 直接成片仍未做(見 parity spec §7)。
 - 🔁 **M3 多引擎**:改以 Google / 火山 / Kling 直接串接,**不走 fal.ai**(使用者決定)。模型設定 UI 可切生圖 / 生影片 / 文字模型,並可加自訂 model id。
+  ⚠️ 註:UI 上的「即夢 2.0」就是 `seedance-provider.ts` 那一家 —— 它打的是**即夢 VGFM**,不是 Seedance。先前標「Seedance 2.0」是誤植,已改正。
+- ✅ **專案層級(對應 parity spec N5)**:季 / 集是**專案之下的可選層**,`frame.episodeId` 未指定就是直接掛在專案下,舊資料與單集專案完全不受影響;世界觀結構化 + `visualBible` 注入所有生成 prompt;小說匯入兩階段拆分。
 - ⏳ 待辦:M4 帶貨、M5 換人物、M6 正式化;以及 parity spec §17 仍未勾的項目(首尾關鍵幀、ffmpeg.wasm 成片、批次生成參考圖等)。
+- 🆕 **資訊架構整理(2026-08-14)**:工具列原本 14 顆平權按鈕已溢出視窗,改成頂部 4 顆常用 + 左側 icon 工具欄(依流程分四組);首頁的備份 / Prompt 模板 / 模型設定收進「設定」下拉。**這一項不在任何 spec 的原始範圍內** —— 對標與規格都只寫功能清單,沒有一項在講操作動線,這是實際使用後才發現的缺口。
 - ⚠️ **額度現況**:免費層**生圖 `limit: 0`、影片無免費層**,兩者都無法實際跑出產出;文字模型(`gemini-2.5-flash`)有免費額度,所以 AI 拆鏡 / 粗剪 / 預審 / 小說匯入都是真的跑過的。生圖與生影片的驗證方式是攔截送出的 payload 檢查正確性,並在文件中標明哪些是「未實際產出」。
 
 ---
@@ -376,7 +383,7 @@ src/components/character/cast-picker.tsx        # 專案選角 / 分鏡指派
 | **M2 時間軸** | Timeline store + 剪接台 UI + playlist 播放 + 匯出(ffmpeg.wasm) | 多段串成一支短片 |
 | **M3 多引擎** | fal.ai adapter → Kling / Seedance / Vidu 可切換 | 模型下拉選單 |
 | **M4 帶貨** | presenter 資產→數字人 + voice→TTS + 商品 i2v + 9:16 模板 | 帶貨 pipeline MVP |
-| **M5 換人物** | reface 資產 + Runway Act-Two / video-to-video | 上傳影片→AI 角色 |
+| **M5 換人物** | reface 資產 + video-to-video。**2026-08-14 更新方向**:不必自建 SMPL/白模管線 —— **Seedance 2.0 原生支援參考影片**(9 圖 + 3 影片),Veo 3.1 完全不吃。詳見 [`bigbanana-parity-spec.md`](./bigbanana-parity-spec.md) §19 | 上傳影片→AI 角色 |
 | **M6 正式化** | 登入 + DB + R2 儲存 + 真鑽石金流 | 可對外營運 |
 
 **建議起手**:M0,且第一個 provider 選 Veo(已有 key、已有生好的圖、已有 `buildVeoPrompt`)。

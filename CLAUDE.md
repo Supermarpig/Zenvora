@@ -6,8 +6,8 @@ Next.js 16 + React 19 + Zustand + shadcn/ui。**純前端,無後端資料庫** �
 
 | 文件 | 內容 |
 |---|---|
-| `docs/director-console-spec.md` | v0.1 產品與技術規格。里程碑 M0/M1 已完成,M2–M6 待辦。**其「實作進度」章節停在 2026-08-12,已過時** |
-| `docs/bigbanana-parity-spec.md` | v0.4 規格。N1–N8 功能對標缺口、§16 內部技術債 D1–D9、§17 執行進度 checkbox。**接手工作先看 §17** |
+| `docs/director-console-spec.md` | v0.1 產品與技術規格。M0–M2 已完成,M4–M6 待辦。**§0 TL;DR 描述的是立案當時(2026-08-12)的狀況,不是現況** —— 現況看它的「實作進度」章節 |
+| `docs/bigbanana-parity-spec.md` | v0.5 規格。N1–N8 功能對標缺口、§16 內部技術債 D1–D9、**§17 執行進度 checkbox(接手先看這裡)**、§19 動作遷移 v2v(**非對標項**,獨立調查) |
 | `docs/director-prompt-guide.md` | 導演術語與 prompt 寫法手冊 |
 | `docs/director-3am-call.json` | 範例分鏡 spec(10 鏡),可用「匯入 JSON」載入 |
 
