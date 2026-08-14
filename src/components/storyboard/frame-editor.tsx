@@ -43,6 +43,7 @@ import { ImageGenerator } from "./image-generator";
 import { VideoPanel } from "./video-panel";
 import { CastPicker } from "@/components/character/cast-picker";
 import { EpisodePicker } from "@/components/project/episode-picker";
+import { usePromptTemplateStore } from "@/stores/use-prompt-template-store";
 
 export function FrameEditor() {
   const selectedFrameId = useFrameStore((s) => s.selectedFrameId);
@@ -98,6 +99,8 @@ export function FrameEditor() {
     return () => clearTimeout(timer);
   }, [serializedValues, selectedFrameId, updateFrame]);
 
+  const fragments = usePromptTemplateStore((s) => s.fragments);
+
   const veoPreview = useMemo(() => {
     if (!frame) return "";
     const previewFrame: Frame = {
@@ -110,8 +113,9 @@ export function FrameEditor() {
       style: watchedValues.style ?? frame.style,
       mood: watchedValues.mood ?? frame.mood,
     };
-    return buildVeoPrompt(previewFrame);
-  }, [watchedValues, frame]);
+    // 預覽必須與實際送出用同一組片段,否則看到的跟生出來的不一樣
+    return buildVeoPrompt(previewFrame, { fragments });
+  }, [watchedValues, frame, fragments]);
 
   function onSubmit(data: Record<string, unknown>) {
     if (!frame) return;

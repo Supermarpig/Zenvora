@@ -40,6 +40,7 @@ import {
 import type { VideoAspectRatio, VideoMode } from "@/lib/video/types";
 import { useModelConfigStore } from "@/stores/use-model-config-store";
 import { resolveVideoModel } from "@/lib/model-config";
+import { usePromptTemplateStore } from "@/stores/use-prompt-template-store";
 
 const ASPECT_OPTIONS: { value: VideoAspectRatio; label: string }[] = [
   { value: "16:9", label: "16:9 橫向" },
@@ -141,6 +142,7 @@ export function VideoPanel({ frameId }: VideoPanelProps) {
       prompt: buildVeoPrompt(frame, {
         mute: !withAudio,
         hasReferenceImage: mode === "i2v",
+        fragments: usePromptTemplateStore.getState().fragments,
       }),
       imageDataUrl: mode === "i2v" ? (img ?? undefined) : undefined,
       // 結束幀只在 i2v 且引擎支援時送(action 那層還會再擋一次)

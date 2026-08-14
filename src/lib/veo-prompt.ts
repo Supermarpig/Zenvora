@@ -1,6 +1,11 @@
 import type { Frame } from "./schemas";
 import { STYLE_LENS, MOOD_LIGHTING } from "./style-tables";
-import { renderTemplate, TEMPLATE_META } from "./prompt-template";
+import {
+  renderTemplate,
+  TEMPLATE_META,
+  resolveFragment,
+  type FragmentOverrides,
+} from "./prompt-template";
 
 const SPEAKER_EN: Record<string, string> = {
   空服員: "The flight attendant",
@@ -58,12 +63,16 @@ export function buildImagePrompt(frame: Frame, template?: string): string {
  * Flow prompt（圖生影片）：只描述動作、運鏡、音效，不重複描述畫面外觀
  * 搭配九宮格中的單張圖片一起貼到 Google Flow
  */
-export function buildFlowPrompt(frame: Frame, mute = true): string {
+export function buildFlowPrompt(
+  frame: Frame,
+  mute = true,
+  fragments: FragmentOverrides = {}
+): string {
   const sections: string[] = [];
+  const f = (id: Parameters<typeof resolveFragment>[0]) =>
+    resolveFragment(id, fragments);
 
-  sections.push(
-    `Starting from this reference image, bring it to life with cinematic motion:`
-  );
+  sections.push(f("flow-intro"));
 
   sections.push(frame.prompt);
 
@@ -72,14 +81,10 @@ export function buildFlowPrompt(frame: Frame, mute = true): string {
     sections.push(`Camera: ${cam}.`);
   }
 
-  sections.push(
-    `Do not alter the character's face, clothing, or appearance from the reference image. Do not render any text, subtitles, or watermarks.`
-  );
+  sections.push(f("flow-preserve"));
 
   if (mute) {
-    sections.push(
-      `[SFX] ambient environmental sound only. No dialogue, no narration.`
-    );
+    sections.push(f("flow-ambient-only"));
   } else if (frame.speaker && frame.dialogue) {
     const cleaned = frame.dialogue.replace(/^[（(].*?[）)]$/g, "").trim();
     if (cleaned) {
@@ -101,13 +106,14 @@ export function buildFlowPrompt(frame: Frame, mute = true): string {
 export function buildExtendPrompt(
   currentFrame: Frame,
   nextFrame: Frame,
-  mute = true
+  mute = true,
+  fragments: FragmentOverrides = {}
 ): string {
   const sections: string[] = [];
+  const f = (id: Parameters<typeof resolveFragment>[0]) =>
+    resolveFragment(id, fragments);
 
-  sections.push(
-    `Continuing seamlessly from the previous clip, smoothly transition into the next action:`
-  );
+  sections.push(f("extend-intro"));
 
   sections.push(nextFrame.prompt);
 
@@ -116,14 +122,10 @@ export function buildExtendPrompt(
     sections.push(`Camera: ${cam}.`);
   }
 
-  sections.push(
-    `Maintain visual continuity — same characters, same location, same lighting. Do not alter faces, clothing, or appearance. No text, subtitles, or watermarks.`
-  );
+  sections.push(f("extend-continuity"));
 
   if (mute) {
-    sections.push(
-      `[SFX] ambient environmental sound only. No dialogue, no narration.`
-    );
+    sections.push(f("flow-ambient-only"));
   } else if (nextFrame.speaker && nextFrame.dialogue) {
     const cleaned = nextFrame.dialogue
       .replace(/^[（(].*?[）)]$/g, "")
@@ -138,6 +140,8 @@ export function buildExtendPrompt(
 
 interface VeoOptions {
   mute?: boolean;
+  /** 固定句片段的使用者覆寫;不傳則全用內建 */
+  fragments?: FragmentOverrides;
   /**
    * 這次生成有沒有起始參考圖。
    *
@@ -154,6 +158,8 @@ interface VeoOptions {
  */
 export function buildVeoPrompt(frame: Frame, opts: VeoOptions = {}): string {
   const sections: string[] = [];
+  const f = (id: Parameters<typeof resolveFragment>[0]) =>
+    resolveFragment(id, opts.fragments ?? {});
 
   sections.push(frame.prompt);
 
@@ -167,17 +173,13 @@ export function buildVeoPrompt(frame: Frame, opts: VeoOptions = {}): string {
   }
 
   if (opts.hasReferenceImage ?? true) {
-    sections.push(
-      `The characters must match the appearance of the person(s) in the uploaded reference photo exactly — same face, hairstyle, body proportions, and clothing.`
-    );
+    sections.push(f("video-reference-match"));
   }
 
-  sections.push(
-    `Do not render any text, subtitles, captions, labels, or watermarks in the video. Pure visual storytelling only.`
-  );
+  sections.push(f("video-no-text"));
 
   if (opts.mute) {
-    sections.push(`[SFX] ambient room tone and subtle environmental sound only. No dialogue, no narration, no voice.`);
+    sections.push(f("video-ambient-only"));
   } else {
     if (frame.speaker && frame.dialogue) {
       const cleaned = frame.dialogue.replace(/^[（(].*?[）)]$/g, "").trim();

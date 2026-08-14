@@ -116,7 +116,11 @@ export function ImageGenerator({ frameId }: ImageGeneratorProps) {
 
   async function handleCopyGridPrompt() {
     if (!frame) return;
-    const prompt = buildFrameGridPrompt(frame, characters);
+    const prompt = buildFrameGridPrompt(
+      frame,
+      characters,
+      usePromptTemplateStore.getState().fragments
+    );
     await navigator.clipboard.writeText(prompt);
     toast.success("已複製 9 宮格 Prompt，貼到 Gemini 生成分鏡表圖");
   }

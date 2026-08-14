@@ -116,11 +116,12 @@ export function PromptRow({ frame }: { frame: Frame }) {
   const [useFlow, setUseFlow] = useState(true);
 
   const characters = project?.characters ?? [];
+  const fragments = usePromptTemplateStore((s) => s.fragments);
   const liveFrame: Frame = { ...frame, prompt, speaker, dialogue };
   const imagePrompt = buildImagePrompt(liveFrame, imageTemplate);
   const veoPrompt = useFlow
-    ? buildFlowPrompt(liveFrame, mute)
-    : buildVeoPrompt(liveFrame, { mute });
+    ? buildFlowPrompt(liveFrame, mute, fragments)
+    : buildVeoPrompt(liveFrame, { mute, fragments });
 
   const sorted = [...allFrames].sort((a, b) => a.order - b.order);
   const nextFrame = sorted.find((f) => f.order > frame.order);
@@ -239,7 +240,13 @@ export function PromptRow({ frame }: { frame: Frame }) {
   }
 
   async function handleCopyGrid(size: 9 | 25) {
-    const gridPrompt = buildGridPrompt([liveFrame], size, characters);
+    const gridPrompt = buildGridPrompt(
+      [liveFrame],
+      size,
+      characters,
+      "landscape",
+      fragments
+    );
     await navigator.clipboard.writeText(gridPrompt);
     toast.success(`已複製 #${frame.order + 1} 的 ${size} 宮格 Prompt`);
   }
@@ -427,7 +434,12 @@ export function PromptRow({ frame }: { frame: Frame }) {
                   size="sm"
                   className="h-6 gap-1 px-2 text-[10px] text-amber-600 hover:text-amber-700"
                   onClick={async () => {
-                    const extPrompt = buildExtendPrompt(liveFrame, nextFrame, mute);
+                    const extPrompt = buildExtendPrompt(
+                      liveFrame,
+                      nextFrame,
+                      mute,
+                      fragments
+                    );
                     await navigator.clipboard.writeText(extPrompt);
                     toast.success(`已複製延長 Prompt → 銜接至 #${nextFrame.order + 1}`);
                   }}

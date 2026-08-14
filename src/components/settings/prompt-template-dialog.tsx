@@ -22,6 +22,10 @@ import {
   renderTemplate,
   resolveTemplate,
   type PromptTemplateId,
+  PROMPT_FRAGMENT_IDS,
+  FRAGMENT_META,
+  resolveFragment,
+  type PromptFragmentId,
 } from "@/lib/prompt-template";
 
 /** 預覽用的範例值,讓使用者看得出變數會被換成什麼 */
@@ -48,10 +52,16 @@ export function PromptTemplateDialog({
   const revertToBuiltIn = usePromptTemplateStore((s) => s.revertToBuiltIn);
   const rollback = usePromptTemplateStore((s) => s.rollback);
   const versions = usePromptTemplateStore((s) => s.versions);
+  const fragmentOverrides = usePromptTemplateStore((s) => s.fragments);
+  const setFragment = usePromptTemplateStore((s) => s.setFragment);
+  const revertFragment = usePromptTemplateStore((s) => s.revertFragment);
 
   const [activeId, setActiveId] = useState<PromptTemplateId>("image");
   const [draft, setDraft] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
+  const [fragmentDrafts, setFragmentDrafts] = useState<
+    Partial<Record<PromptFragmentId, string>>
+  >({});
 
   const meta = TEMPLATE_META[activeId];
   const current = resolveTemplate(activeId, overrides);
@@ -88,8 +98,9 @@ export function PromptTemplateDialog({
         <DialogHeader>
           <DialogTitle>Prompt 模板</DialogTitle>
           <DialogDescription>
-            沒改過的模板會沿用程式內建版本，所以改壞了隨時能還原。影片與宮格
-            prompt 有大量條件分支，未開放編輯。
+            沒改過的都沿用程式內建版本，所以改壞了隨時能還原。
+            影片與宮格 prompt 的結構留在程式裡，但其中的<strong className="text-foreground">固定句子</strong>
+            可以在下方改措辭。
           </DialogDescription>
         </DialogHeader>
 
@@ -208,6 +219,112 @@ export function PromptTemplateDialog({
               ))}
             </ul>
           )}
+
+          {/* --- 固定句片段 --- */}
+          <div className="space-y-3 border-t pt-4">
+            <div>
+              <Label className="text-sm">影片 / 宮格的固定句子</Label>
+              <p className="mt-1 text-xs text-muted-foreground">
+                這些 prompt 的<strong className="text-foreground">結構</strong>
+                （哪一句在什麼條件下出現）留在程式裡，因為那是邏輯不是文字；
+                這裡開放的是<strong className="text-foreground">措辭</strong>。
+                所以沒有變數也沒有語法，就是一句話。
+              </p>
+            </div>
+
+            <ul className="space-y-3">
+              {PROMPT_FRAGMENT_IDS.map((id) => {
+                const fm = FRAGMENT_META[id];
+                const value =
+                  fragmentDrafts[id] ?? resolveFragment(id, fragmentOverrides);
+                const overridden = Boolean(fragmentOverrides[id]?.trim());
+                const dirty =
+                  fragmentDrafts[id] !== undefined &&
+                  fragmentDrafts[id] !== resolveFragment(id, fragmentOverrides);
+
+                return (
+                  <li key={id} className="space-y-1.5 rounded-lg border p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="flex items-center gap-1.5 text-xs font-medium">
+                          {fm.label}
+                          {overridden && (
+                            <span className="rounded bg-primary/15 px-1.5 text-[10px] text-primary">
+                              已改
+                            </span>
+                          )}
+                        </p>
+                        <p className="mt-0.5 text-[11px] text-muted-foreground">
+                          {fm.appearsWhen}
+                        </p>
+                      </div>
+                      {overridden && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 shrink-0 text-xs"
+                          onClick={() => {
+                            revertFragment(id);
+                            setFragmentDrafts((d) => {
+                              const next = { ...d };
+                              delete next[id];
+                              return next;
+                            });
+                            toast.success("已還原內建句子");
+                          }}
+                        >
+                          還原
+                        </Button>
+                      )}
+                    </div>
+
+                    <Textarea
+                      value={value}
+                      rows={2}
+                      className="resize-none font-mono text-[11px]"
+                      onChange={(e) =>
+                        setFragmentDrafts((d) => ({ ...d, [id]: e.target.value }))
+                      }
+                    />
+
+                    {dirty && (
+                      <div className="flex gap-1.5">
+                        <Button
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={() => {
+                            setFragment(id, fragmentDrafts[id] ?? "");
+                            setFragmentDrafts((d) => {
+                              const next = { ...d };
+                              delete next[id];
+                              return next;
+                            });
+                            toast.success("已儲存");
+                          }}
+                        >
+                          儲存
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={() =>
+                            setFragmentDrafts((d) => {
+                              const next = { ...d };
+                              delete next[id];
+                              return next;
+                            })
+                          }
+                        >
+                          取消
+                        </Button>
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

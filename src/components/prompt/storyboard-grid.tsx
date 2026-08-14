@@ -9,6 +9,7 @@ import { CopyButton } from "./copy-button";
 import { loadImage } from "@/lib/db";
 import { buildFrameGridPrompt } from "@/lib/storyboard-prompt";
 import type { Frame } from "@/lib/schemas";
+import { usePromptTemplateStore } from "@/stores/use-prompt-template-store";
 
 function GridCell({ frame }: { frame: Frame }) {
   const [thumbnail, setThumbnail] = useState<string | null>(null);
@@ -20,7 +21,11 @@ function GridCell({ frame }: { frame: Frame }) {
   }, [frame.imageBase64Key, frame.id]);
 
   async function handleCopyGridPrompt() {
-    const prompt = buildFrameGridPrompt(frame);
+    const prompt = buildFrameGridPrompt(
+      frame,
+      [],
+      usePromptTemplateStore.getState().fragments
+    );
     await navigator.clipboard.writeText(prompt);
     toast.success(`已複製分鏡 #${frame.order + 1} 的 9 宮格 Prompt`);
   }

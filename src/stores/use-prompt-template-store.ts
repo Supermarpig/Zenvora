@@ -1,6 +1,10 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { PromptTemplateId } from "@/lib/prompt-template";
+import type {
+  PromptTemplateId,
+  PromptFragmentId,
+  FragmentOverrides,
+} from "@/lib/prompt-template";
 
 /**
  * Prompt 模板覆寫與版本歷史。
@@ -21,11 +25,20 @@ const MAX_VERSIONS_PER_TEMPLATE = 20;
 interface PromptTemplateState {
   overrides: Partial<Record<PromptTemplateId, string>>;
   versions: PromptTemplateVersion[];
+  /**
+   * 固定句片段的覆寫。與 `overrides` 分開存 —— 兩者的 id 空間不同,
+   * 混在一個物件裡會讓「這個 key 是模板還是片段」變成靠命名猜。
+   * 片段沒有變數也沒有結構,所以不需要版本歷史(改壞了一眼看得出來,還原一鍵)。
+   */
+  fragments: FragmentOverrides;
 
   setTemplate: (id: PromptTemplateId, body: string) => void;
   revertToBuiltIn: (id: PromptTemplateId) => void;
   rollback: (versionId: string) => void;
   versionsOf: (id: PromptTemplateId) => PromptTemplateVersion[];
+
+  setFragment: (id: PromptFragmentId, body: string) => void;
+  revertFragment: (id: PromptFragmentId) => void;
 }
 
 export const usePromptTemplateStore = create<PromptTemplateState>()(
@@ -33,6 +46,7 @@ export const usePromptTemplateStore = create<PromptTemplateState>()(
     (set, get) => ({
       overrides: {},
       versions: [],
+      fragments: {},
 
       setTemplate: (id, body) => {
         const trimmed = body.trim();
@@ -81,6 +95,22 @@ export const usePromptTemplateStore = create<PromptTemplateState>()(
           overrides: { ...state.overrides, [version.templateId]: version.body },
         }));
       },
+
+      setFragment: (id, body) => {
+        const trimmed = body.trim();
+        if (!trimmed) {
+          get().revertFragment(id);
+          return;
+        }
+        set((state) => ({ fragments: { ...state.fragments, [id]: trimmed } }));
+      },
+
+      revertFragment: (id) =>
+        set((state) => {
+          const next = { ...state.fragments };
+          delete next[id];
+          return { fragments: next };
+        }),
 
       versionsOf: (id) =>
         get()

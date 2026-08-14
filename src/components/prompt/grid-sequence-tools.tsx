@@ -22,6 +22,7 @@ import {
   type GridOrientation,
 } from "@/lib/storyboard-prompt";
 import type { Frame } from "@/lib/schemas";
+import { usePromptTemplateStore } from "@/stores/use-prompt-template-store";
 
 /** 25 格刻意不開放:1024px 除以 5 每格只剩約 205px,切出來不堪用 */
 const SIZE_OPTIONS: { value: GridSize; label: string }[] = [
@@ -73,7 +74,8 @@ export function GridSequenceTools({
       targets,
       size,
       project?.characters ?? [],
-      orientation
+      orientation,
+      usePromptTemplateStore.getState().fragments
     );
     await navigator.clipboard.writeText(prompt);
     toast.success(

@@ -1,5 +1,9 @@
 import type { Frame, Character } from "./schemas";
 import { STYLE_LENS, MOOD_LIGHTING } from "./style-tables";
+import {
+  resolveFragment,
+  type FragmentOverrides,
+} from "./prompt-template";
 
 export type GridSize = 4 | 6 | 9 | 25;
 export type GridOrientation = "landscape" | "portrait";
@@ -66,11 +70,13 @@ export function gridSpec(
   return { ...layout, imageAspect, panelAspect: describeAspect(panelRatio) };
 }
 
-function buildCharacterBlock(characters: Character[]): string[] {
+function buildCharacterBlock(
+  characters: Character[],
+  fragments: FragmentOverrides = {}
+): string[] {
+  // 沒有帶角色清單時借用影片那一句 —— 兩處講的是同一件事,分開維護會漂移
   if (characters.length === 0) {
-    return [
-      `The characters must match the appearance of the person(s) in the uploaded reference photo exactly — same face, hairstyle, body proportions, and clothing.`,
-    ];
+    return [resolveFragment("video-reference-match", fragments)];
   }
 
   const lines = [
@@ -79,7 +85,7 @@ function buildCharacterBlock(characters: Character[]): string[] {
   characters.forEach((c, i) => {
     lines.push(`- Reference Photo ${i + 1} → "${c.name}": ${c.description}`);
   });
-  lines.push(`Maintain identical character appearance across ALL images.`);
+  lines.push(resolveFragment("grid-consistency", fragments));
   return lines;
 }
 
@@ -87,7 +93,8 @@ export function buildGridPrompt(
   frames: Frame[],
   gridSize: GridSize = 9,
   characters: Character[] = [],
-  orientation: GridOrientation = "landscape"
+  orientation: GridOrientation = "landscape",
+  fragments: FragmentOverrides = {}
 ): string {
   const panelCount = gridSize;
   const spec = gridSpec(gridSize, orientation);
@@ -119,9 +126,9 @@ export function buildGridPrompt(
       `- Lighting should subtly shift between panels — vary rim light intensity, shadow direction, and highlight placement to create visual rhythm.`,
       `- The sequence should feel like hand-picked keyframes from a professional film — with narrative flow, emotional progression, and cinematic tension.`,
       ``,
-      `Do not include any text, words, subtitles, numbers, or labels. Tell the story purely through visuals.`,
+      resolveFragment("grid-no-text", fragments),
       ``,
-      ...buildCharacterBlock(characters),
+      ...buildCharacterBlock(characters, fragments),
     ].join("\n");
   }
 
@@ -140,15 +147,16 @@ export function buildGridPrompt(
     ``,
     ...panelLines,
     ``,
-    `Do not include any text, words, subtitles, numbers, or labels. Tell the story purely through visuals.`,
+    resolveFragment("grid-no-text", fragments),
     ``,
-    ...buildCharacterBlock(characters),
+    ...buildCharacterBlock(characters, fragments),
   ].join("\n");
 }
 
 export function buildFrameGridPrompt(
   frame: Frame,
-  characters: Character[] = []
+  characters: Character[] = [],
+  fragments: FragmentOverrides = {}
 ): string {
-  return buildGridPrompt([frame], 9, characters);
+  return buildGridPrompt([frame], 9, characters, "landscape", fragments);
 }
