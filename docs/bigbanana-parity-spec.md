@@ -940,6 +940,8 @@ const STYLE_LENS: Record<string, { verbose: string; compact: string }>
 
 ### D9 — 影片任務狀態有兩個家
 
+> **已於 2026-08-15 以方案 C 修掉**:拿掉 `VideoJob.status` / `error`,`frame.videoStatus` 成為狀態的唯一真相,`use-job-store` 退化成純「續輪詢資訊」(job 存在與否即代表在不在跑),不再雙寫。狀態推導抽成純函式 [`src/lib/video-status.ts`](../src/lib/video-status.ts) 的 `deriveVideoStatus()`,有單元測試 `tests/video-status.test.ts`(9 條)。UI consumer 零改動、`frameSchema` 零破壞(舊欄位保留當 deprecated,停止寫入)。**未驗的部分**:真實 running → succeeded 轉移需影片額度,只驗到 idle 面板掛載無誤 + 單元測試涵蓋轉移組合(見 CLAUDE.md 兩層驗收)。下方診斷與方案分析保留供理解脈絡。
+
 `frameSchema` 有 `videoKey` / `videoStatus` / `videoDurationSec` / `videoError`,而 `use-job-store` 也在管任務狀態。兩邊都可能是真相來源。
 
 **更正**:`use-job-store` **也是 persist 的**(先前本節誤述為「不需持久化」)。它存 `providerJobId`,重開瀏覽器後要靠它繼續輪詢未完成的任務,所以本來就該持久化。
@@ -952,6 +954,42 @@ const STYLE_LENS: Record<string, { verbose: string; compact: string }>
 | `use-job-store` | provider 端任務追蹤(`providerJobId`、輪詢) | 是 |
 
 **實際風險**:`videoStatus` 與 `VideoJob.status` 在 `running` / `succeeded` / `failed` 三個值上重疊,兩邊各自更新就會出現「job 已成功但分鏡還顯示 running」。已在 `frameSchema` 加註解標明,做 **N4 渲染追蹤** 時應進一步收斂為單一來源。
+
+#### 收斂方案(2026-08-15 盤點;N4 已完成,可著手)
+
+盤點兩個事實決定了取捨:
+
+1. **`use-job-store` 的唯一 consumer 是 `use-generate-video.ts`** —— 全專案沒有別處讀 job(`schemas.ts` 只是註解提到)。動 job store 幾乎零波及。
+2. **`frame.videoStatus` 被 4 個 UI 讀**:`frame-node.tsx`(running 徽章)、`frame-editor.tsx`(分頁狀態標記)、`timeline-preview-dialog.tsx`(每格初始狀態)、`storyboard-canvas.tsx`(傳給 frame-node)。所以它**不能直接砍**,砍了得替這 4 個另找來源。
+
+**核心觀察:`frame.videoStatus` 與 `frame.videoError` 是 100% 可導出的**,本來就不必獨立存一份 ——
+
+| UI 想知道 | 從什麼導出 |
+|---|---|
+| `none` | 沒有 job 且沒有 `videoKey` |
+| `queued` / `running` | job 存在且進行中(job store 已 persist) |
+| `succeeded` | `videoKey` 存在(成片檔在 IndexedDB,不可導出的唯一真相) |
+| `failed` | job 的 status/error(失敗的 job 已 persist 在 job store) |
+
+即「結果」裡真正不可導出的只有 `videoKey`;`videoStatus`/`videoError` 是把任務狀態**抄一份**到 frame,那份 copy 就是本項病灶。兩條路線,依「願意動多大範圍」擇一:
+
+**方案 B(概念最乾淨,但動到 UI)—— job store 當唯一狀態真相,frame 只留 `videoKey`**
+
+- `use-generate-video.ts` 轉移時**只寫 job store**,拿掉所有 `updateFrame({ videoStatus / videoError })`;成功時仍寫 `videoKey`(那是結果)。derived `status`(現 174–181 行)改由 `(job, videoKey)` 算。
+- 4 個 UI consumer 改讀同一個推導來源(job store 導出的 `useVideoStatus(frameId)`,或純函式 `deriveVideoStatus(job, hasVideoKey)`)。
+- `frameSchema.videoStatus` / `videoError` 照 **D3** 慣例**留在 schema 當 deprecated**(舊備份還有這欄,拿掉會被 zod 剝掉),但停止寫入、無人讀。
+- 代價:動 4 個 UI 檔。好處:frame 不再扛 transient 狀態。
+
+**方案 C(blast radius 最小)—— frame 當唯一真相,job store 退化成「續輪詢資訊」**
+
+- `frameSchema.videoStatus` 保留為真相,**4 個 UI 完全不動**。
+- `use-job-store` **移除 `status` / `error` 欄位與 `setJobStatus`**,只留 `providerId` / `providerJobId` / `model` / `createdAt`(重開後續輪詢要用)。輪詢 `enabled` 改判 `frame.videoStatus === "running"`。
+- `use-generate-video.ts` 轉移時只寫 `updateFrame`,不再雙寫。
+- 代價:frame 仍帶 transient 狀態(概念沒 B 純)。好處:0 個 UI 檔、0 schema 破壞。
+
+**建議**:B / C 擇一即可,兩者都消滅雙寫 —— 在意「frame 不該扛 transient 狀態」選 B,要最小風險選 C。**唯一不能做的是兩邊都留 status,那就是現況。** 再往前一步(可選):把 `providerJobId` / `providerId` / `createdAt` 也搬上 frame、**整個刪掉 `use-job-store`**,換單一 store;但那要加 3 個欄位到已被備份 / migrate 的 `frameSchema`,得先評估值不值得少一個 72 行的 store。
+
+**要補的測試**:`use-generate-video` 目前沒有測試(是 hook,難測)。把狀態推導抽成純函式 `deriveVideoStatus(...)` 後就能比照 `veo-payload.test.ts` 單元測,至少釘住這幾條會回歸的組合:「job succeeded 但還沒下載完 → 不該顯示 `none`」「job failed → `failed` 且帶 error」「無 job 但有 `videoKey` → `succeeded`」。
 
 ---
 
@@ -995,6 +1033,16 @@ const STYLE_LENS: Record<string, { verbose: string; compact: string }>
 - [x] ~~宮格 4/6/9 × 橫直版(§4.9)~~ —— 2026-08-13 完成。實作為 `gridSpec()`(非初稿的 `gridLayout()`),同時回傳排版、整張比例與**每格的近似比例**;`buildGridPrompt` 加 `orientation` 參數,UI 可選格數與方向(預設 9 格直版,因為這個工具主要用於短影音)。8 個單元測試釘住排版數學,並實測 6 格橫版切圖順序正確
 - [x] ~~驗收:只有起始幀時 payload 與現行完全一致(防回歸)~~ —— 11 個單元測試(`tests/veo-payload.test.ts`)。這條是首尾關鍵幀最大的風險:改壞現有圖生影片會安靜地變成別的東西,而生影片沒有免費額度、開發時不會有人發現。
   **瀏覽器實測**:攔截 server action 的 request body —— `mode=i2v`、起始幀與結束幀都在且內容不同、5s 已吸附成 4s、Veo 的比例下拉只有 16:9/9:16、切到即夢後結束幀 slot 消失。**全程攔掉 POST,沒有任何請求打到 Veo**
+
+### N1 附加:MiniMax 海螺 H3 provider(2026-08-15)
+
+- [x] ~~程式 + 註冊 + 測試~~ —— 走官方 V2(`POST /v2/video_generation`,`content` 陣列 + `role` first_frame/last_frame),`image_url` 直接吃 data URI(本地關鍵幀免上圖床)。payload 拆純函式 `buildMinimaxPayload`,10 個回歸測試;下拉「海螺 H3」可選已瀏覽器實測。SSRF 白名單加 `hailuoai.com` / `minimax.io` / `minimaxi.com`。`supportsEndFrame: true`、原生音訊、4–15 秒連續整數
+- [ ] **live API 契約未驗** —— 要有 `MINIMAX_API_KEY` 才驗得到(使用者申請中;沒 key 時 provider 在送出前就 throw,連 payload 都打不到線上)。第一支真實成片會驗證/暴露這幾點:
+  1. **回應解析** —— 成功時取 `task.content.url`;若 API 實際只回 `file_id`(需再打 files/retrieve)會落到「完成但無成片 URL」錯誤,**這是最可能要補的一段**
+  2. **CDN host** 是否真的是 `cdn.hailuoai.com`(白名單依此;host 不同 → 下載 403「不允許的下載來源」)
+  3. **resolution / duration / ratio** 的實際接受值(依 docs 填,docs 在知識截止之後)
+  4. **`base_resp` 業務錯誤**形狀(沿用 MiniMax 舊版 API 假設)
+  - provider 已防禦式多路徑撈 URL(`content.url` / `content.video_url` / `task.video_url` / `download_url` / `file.download_url`),但真值要成片才知道
 
 ### N2 資產庫泛化(中)
 
