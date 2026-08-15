@@ -10,15 +10,16 @@ import {
 import { useFrameStore } from "@/stores/use-frame-store";
 import { useJobStore } from "@/stores/use-job-store";
 import { saveVideo, loadVideo, deleteVideo, getVideoKey } from "@/lib/db";
+import { deriveVideoStatus } from "@/lib/video-status";
 
-export type VideoUiStatus = "none" | "running" | "succeeded" | "failed";
+// 型別的家搬到 @/lib/video-status(推導的唯一來源);re-export 讓既有 import 路徑不變
+export type { VideoUiStatus } from "@/lib/video-status";
 
 export function useVideoGeneration(frameId: string) {
   const frame = useFrameStore((s) => s.getFrame(frameId));
   const updateFrame = useFrameStore((s) => s.updateFrame);
   const job = useJobStore((s) => s.jobs[frameId]);
   const startJob = useJobStore((s) => s.startJob);
-  const setJobStatus = useJobStore((s) => s.setJobStatus);
   const removeJob = useJobStore((s) => s.removeJob);
 
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -51,7 +52,8 @@ export function useVideoGeneration(frameId: string) {
   // 輪詢
   const poll = useQuery({
     queryKey: ["video-job", frameId, job?.providerJobId],
-    enabled: !!job && job.status === "running",
+    // job 存在 == 有在跑(終態會 removeJob),所以這就是「該不該輪詢」的唯一訊號
+    enabled: !!job,
     refetchInterval: (q) =>
       q.state.data?.status === "running" ? 5000 : false,
     queryFn: async () => {
@@ -103,16 +105,17 @@ export function useVideoGeneration(frameId: string) {
         } catch (e) {
           const msg = e instanceof Error ? e.message : "下載失敗";
           setLocalError(msg);
-          setJobStatus(frameId, "failed", msg);
           updateFrame(frameId, { videoStatus: "failed", videoError: msg });
+          removeJob(frameId);
         }
       })();
-    } else if (data.status === "failed" && job.status === "running") {
+    } else if (data.status === "failed") {
       const msg = "error" in data ? data.error : "生成失敗";
-      setJobStatus(frameId, "failed", msg);
+      // 錯誤透過 frame.videoError 呈現(單一真相);removeJob 讓下一次 render 早退不重複處理
       updateFrame(frameId, { videoStatus: "failed", videoError: msg });
+      removeJob(frameId);
     }
-  }, [poll.data, job, frameId, updateFrame, removeJob, setJobStatus]);
+  }, [poll.data, job, frameId, updateFrame, removeJob]);
 
   const generate = useCallback(
     async (input: GenerateVideoInput) => {
@@ -166,31 +169,28 @@ export function useVideoGeneration(frameId: string) {
   // 計時
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    if (job?.status !== "running") return;
+    if (!job) return; // job 存在即代表在跑
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
-  }, [job?.status]);
+  }, [job]);
 
-  const status: VideoUiStatus =
-    job?.status === "running"
-      ? "running"
-      : videoKey
-      ? "succeeded"
-      : localError || frame?.videoStatus === "failed"
-      ? "failed"
-      : "none";
+  // 狀態的唯一推導來源:frame.videoStatus(持久真相)+ 有無成片檔 + 即時錯誤
+  const status = deriveVideoStatus({
+    videoStatus: frame?.videoStatus,
+    hasVideoKey: !!videoKey,
+    localError: !!localError,
+  });
 
-  const elapsedSec =
-    job?.status === "running"
-      ? Math.max(0, Math.floor((now - new Date(job.createdAt).getTime()) / 1000))
-      : 0;
+  const elapsedSec = job
+    ? Math.max(0, Math.floor((now - new Date(job.createdAt).getTime()) / 1000))
+    : 0;
 
   return {
     status,
     videoUrl,
     isSubmitting,
     elapsedSec,
-    error: localError ?? job?.error ?? frame?.videoError ?? null,
+    error: localError ?? frame?.videoError ?? null,
     generate,
     removeVideo,
   };
