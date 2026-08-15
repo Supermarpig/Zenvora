@@ -48,6 +48,9 @@ export async function GET(req: NextRequest) {
     "kuaishou.com", // 快手 CDN
     "kwimgs.com",
     "yximgs.com",
+    "hailuoai.com", // MiniMax / 海螺 成片 CDN(cdn.hailuoai.com)
+    "minimax.io", // MiniMax 國際站檔案
+    "minimaxi.com", // MiniMax 大陸站檔案
   ];
   const allowed = ALLOWED_HOST_SUFFIXES.some((s) =>
     matchesHost(target.hostname, s)

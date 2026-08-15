@@ -1,6 +1,7 @@
 import { createVeoProvider } from "./veo-provider";
 import { createSeedanceProvider } from "./seedance-provider";
 import { createKlingProvider } from "./kling-provider";
+import { createMinimaxProvider } from "./minimax-provider";
 import type {
   VideoAspectRatio,
   VideoModelOption,
@@ -15,6 +16,7 @@ const providers: Record<string, VideoProvider> = {
   veo: createVeoProvider(),
   seedance: createSeedanceProvider(),
   kling: createKlingProvider(),
+  minimax: createMinimaxProvider(),
 };
 
 export function getProvider(id: string): VideoProvider {
@@ -92,6 +94,20 @@ export const VIDEO_MODELS: VideoModelOption[] = [
     supportsEndFrame: false,
     supportedAspects: ["16:9", "9:16", "1:1"],
     creditCost: 28,
+  },
+  {
+    // 海螺 H3(Hailuo 3.0)走 MiniMax 開放平台 V2 API。原生 2K/音訊,V2 的
+    // content role: first_frame/last_frame 支援首尾關鍵幀,且 image_url 直接吃
+    // data URI(本地關鍵幀免上圖床)。creditCost 依官方 2K 約 $0.13/秒估;實際
+    // 預設送 768P 會更省,價格以官方為準。H3 接受 4–15 秒整數,不需 allowedDurations。
+    providerId: "minimax",
+    model: "MiniMax-H3",
+    label: "海螺 H3（MiniMax · 2K/原生音訊 · ~$0.13/s@2K）",
+    supportsImage: true,
+    supportsAudio: true,
+    supportsEndFrame: true,
+    supportedAspects: ["16:9", "9:16", "1:1"],
+    creditCost: 13,
   },
 ];
 
