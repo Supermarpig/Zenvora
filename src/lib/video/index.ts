@@ -2,6 +2,7 @@ import { createVeoProvider } from "./veo-provider";
 import { createSeedanceProvider } from "./seedance-provider";
 import { createKlingProvider } from "./kling-provider";
 import { createMinimaxProvider } from "./minimax-provider";
+import { createComfyuiProvider } from "./comfyui-provider";
 import type {
   VideoAspectRatio,
   VideoModelOption,
@@ -17,6 +18,7 @@ const providers: Record<string, VideoProvider> = {
   seedance: createSeedanceProvider(),
   kling: createKlingProvider(),
   minimax: createMinimaxProvider(),
+  comfyui: createComfyuiProvider(),
 };
 
 export function getProvider(id: string): VideoProvider {
@@ -108,6 +110,21 @@ export const VIDEO_MODELS: VideoModelOption[] = [
     supportsEndFrame: true,
     supportedAspects: ["16:9", "9:16", "1:1"],
     creditCost: 13,
+  },
+  {
+    // 本地 ComfyUI + LTX-2(圖生影片・免費・跑在使用者 Mac 上)。
+    // creditCost 0 —— 不花錢,只花時間(M3 上一段 2~4 秒約 7~15 分鐘)。
+    // 只做 i2v(需起始圖);結束幀之後可用 LTXVAddGuide 再開。實作見 comfyui-provider.ts。
+    providerId: "comfyui",
+    model: "ltx-2-local",
+    label: "LTX-2 本地（ComfyUI · 免費 · 慢）",
+    supportsImage: true,
+    supportsAudio: false,
+    supportsEndFrame: false,
+    supportedAspects: ["16:9", "9:16", "1:1"],
+    // Mac 上很慢,限制在短秒數(frames() 也會夾在 ~1~4s)
+    allowedDurations: [2, 3, 4],
+    creditCost: 0,
   },
 ];
 

@@ -15,6 +15,13 @@ import { deriveVideoStatus } from "@/lib/video-status";
 // 型別的家搬到 @/lib/video-status(推導的唯一來源);re-export 讓既有 import 路徑不變
 export type { VideoUiStatus } from "@/lib/video-status";
 
+/**
+ * 正在下載成片的 frameId(module 層,跨 hook 實例共享)。
+ * 影片面板與 App 層 VideoJobPoller 可能同時為同一鏡掛 hook、同時處理「完成」,
+ * 用這個 Set 去重,避免對同一段影片下載/存檔兩次。
+ */
+const inFlightDownloads = new Set<string>();
+
 export function useVideoGeneration(frameId: string) {
   const frame = useFrameStore((s) => s.getFrame(frameId));
   const updateFrame = useFrameStore((s) => s.updateFrame);
@@ -61,7 +68,8 @@ export function useVideoGeneration(frameId: string) {
       const res = await getVideoJob(job.providerId, job.providerJobId);
       if (!res.success)
         return { status: "failed" as const, error: res.error };
-      return res.job;
+      // 帶上 needsProxyDownload,讓完成時決定直抓(本機 ComfyUI)或走代理(雲端帶 key)
+      return { ...res.job, needsProxyDownload: res.needsProxyDownload };
     },
   });
 
@@ -76,12 +84,21 @@ export function useVideoGeneration(frameId: string) {
       data.videoUri &&
       !completedRef.current
     ) {
+      // 別的實例(面板/輪詢器)已在下載這一鏡 → 早退,不重複抓
+      if (inFlightDownloads.has(frameId)) return;
       completedRef.current = true;
+      inFlightDownloads.add(frameId);
       const uri = data.videoUri;
+      // 本機 ComfyUI 的 /view 已開 CORS,前端直抓;雲端 provider 走 /api/video 代理帶 key。
+      // needsProxyDownload 缺省時保守走代理(維持既有行為)。
+      const needsProxy =
+        "needsProxyDownload" in data ? data.needsProxyDownload !== false : true;
       (async () => {
         try {
           const res = await fetch(
-            `/api/video/download?uri=${encodeURIComponent(uri)}`
+            needsProxy
+              ? `/api/video/download?uri=${encodeURIComponent(uri)}`
+              : uri
           );
           if (!res.ok) {
             const j = (await res.json().catch(() => ({}))) as {
@@ -107,6 +124,8 @@ export function useVideoGeneration(frameId: string) {
           setLocalError(msg);
           updateFrame(frameId, { videoStatus: "failed", videoError: msg });
           removeJob(frameId);
+        } finally {
+          inFlightDownloads.delete(frameId);
         }
       })();
     } else if (data.status === "failed") {

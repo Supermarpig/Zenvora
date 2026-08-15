@@ -72,7 +72,7 @@ export async function generateVideo(
 }
 
 export type PollVideoResult =
-  | { success: true; job: VideoJobState }
+  | { success: true; job: VideoJobState; needsProxyDownload: boolean }
   | { success: false; error: string };
 
 export async function getVideoJob(
@@ -82,7 +82,8 @@ export async function getVideoJob(
   try {
     const provider = getProvider(providerId || "veo");
     const job = await provider.poll(providerJobId);
-    return { success: true, job };
+    // 前端據此決定成片走 /api/video 代理(雲端 https)還是直抓(本機 ComfyUI /view)
+    return { success: true, job, needsProxyDownload: provider.needsProxyDownload };
   } catch (err) {
     return {
       success: false,

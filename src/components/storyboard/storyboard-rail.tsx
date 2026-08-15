@@ -16,6 +16,8 @@ import { PlanReviewDialog } from "./plan-review-dialog";
 import { RoughCutDialog } from "./rough-cut-dialog";
 import { TimelinePreviewDialog } from "./timeline-preview-dialog";
 import { BatchImageButton } from "./batch-image-button";
+import { BatchVideoButton } from "./batch-video-button";
+import { VideoJobPoller } from "./video-job-poller";
 import { EpisodeManagerDialog } from "@/components/project/episode-manager-dialog";
 
 /**
@@ -76,6 +78,10 @@ export function StoryboardRail({
         <Divider />
 
         <BatchImageButton projectId={projectId} rail />
+        <BatchVideoButton projectId={projectId} rail />
+
+        {/* 隱形:全域影片任務輪詢器,讓批次/整晚跑的成片不綁面板也能抓回存檔 */}
+        <VideoJobPoller />
       </aside>
     </TooltipProvider>
   );
