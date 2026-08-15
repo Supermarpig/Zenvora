@@ -17,6 +17,13 @@ export interface ModelOption {
 export const DEFAULT_IMAGE_MODEL = "gemini-2.5-flash-image";
 
 /**
+ * 本地 Draw Things(A1111 相容 HTTP API)的生圖識別。選這個時 generate-image
+ * 走本機 `/sdapi/v1/txt2img`,不碰 Google key、不計 credit。用哪個藝術模型是在
+ * Draw Things App 那邊選的(API 用「當下載入的模型」),所以這裡只需一個識別。
+ */
+export const LOCAL_IMAGE_MODEL = "drawthings-local";
+
+/**
  * 文字模型(生成分鏡、粗剪、拆小說、預審、推寫資產都用它)。
  *
  * 免費層目前只有 flash 系列可用,所以這個設定的實際選擇空間小 ——

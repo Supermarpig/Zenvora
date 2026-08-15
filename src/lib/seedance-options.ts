@@ -33,6 +33,8 @@ export const moodOptions = MOOD_OPTIONS.map((value) => ({
 export const modelOptions = [
   { value: "gemini-2.5-flash-image", label: "Gemini 2.5 Flash（快速）" },
   { value: "gemini-3-pro-image", label: "Gemini 3 Pro（高品質）" },
+  // = LOCAL_IMAGE_MODEL(model-config.ts)。字面量而非 import,避免與 model-config 互相 import 成環。
+  { value: "drawthings-local", label: "Draw Things 本地（免費・M3）" },
 ] as const;
 
 export const imageSizeOptions = [

@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { MODEL_CREDIT_COST } from "@/lib/credits";
-import { DEFAULT_IMAGE_MODEL } from "@/lib/model-config";
+import { DEFAULT_IMAGE_MODEL, LOCAL_IMAGE_MODEL } from "@/lib/model-config";
 
 const generateImageInputSchema = z.object({
   prompt: z.string().min(1, "請輸入圖片描述"),
@@ -33,6 +33,78 @@ export type GenerateImageResult =
   | { success: true; base64: string; creditCost: number }
   | { success: false; error: string };
 
+/**
+ * 比例 → 像素尺寸(皆 64 的倍數,約 1MP,SDXL / FLUX 友善)。
+ * 覆寫 Draw Things 目前載入模型的預設尺寸;其餘參數沿用 App 內設定。
+ */
+const LOCAL_DIMS: Record<
+  GenerateImageInput["imageSize"],
+  { width: number; height: number }
+> = {
+  "1:1": { width: 1024, height: 1024 },
+  "16:9": { width: 1024, height: 576 },
+  "9:16": { width: 576, height: 1024 },
+  "4:3": { width: 1024, height: 768 },
+  "3:4": { width: 768, height: 1024 },
+  "3:2": { width: 960, height: 640 },
+  "2:3": { width: 640, height: 960 },
+};
+
+/**
+ * 本地 Draw Things:走 A1111 相容的 /sdapi/v1/txt2img(純 HTTP,免 key、免 credit)。
+ *
+ * 藝術模型是在 Draw Things App 那邊選的 —— API 用「當下載入的模型」生圖,所以這裡
+ * 不指定 model。參考圖(角色一致性)本地暫不支援:那需要 img2img / LoRA,是後續。
+ */
+async function generateImageLocal(
+  prompt: string,
+  imageSize: GenerateImageInput["imageSize"]
+): Promise<GenerateImageResult> {
+  const base = (process.env.DRAWTHINGS_URL || "http://127.0.0.1:7860").replace(
+    /\/+$/,
+    ""
+  );
+  const { width, height } = LOCAL_DIMS[imageSize];
+
+  try {
+    const res = await fetch(`${base}/sdapi/v1/txt2img`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt, negative_prompt: "", width, height, seed: -1 }),
+    });
+
+    if (!res.ok) {
+      const body = await res.text();
+      return {
+        success: false,
+        error: `Draw Things 錯誤 ${res.status}: ${body.slice(0, 400)}`,
+      };
+    }
+
+    const json = await res.json();
+    const first = json?.images?.[0];
+    if (typeof first !== "string" || !first) {
+      return {
+        success: false,
+        error: "Draw Things 未回傳圖片 —— 確認 App 已載入一個「圖像」模型(非影片模型)",
+      };
+    }
+
+    // A1111 介面回純 base64(無 data: 前綴),Draw Things 出 PNG
+    const base64 = first.startsWith("data:")
+      ? first
+      : `data:image/png;base64,${first}`;
+    return { success: true, base64, creditCost: 0 };
+  } catch (err) {
+    // 連不上多半是:Draw Things 沒開 / HTTP API 伺服器沒啟動 / 埠不對
+    const detail = err instanceof Error ? err.message : "未知錯誤";
+    return {
+      success: false,
+      error: `連不上 Draw Things(${base}):${detail} —— 確認 App 開著、HTTP API 伺服器已啟動於此埠`,
+    };
+  }
+}
+
 export async function generateImage(
   input: GenerateImageInput
 ): Promise<GenerateImageResult> {
@@ -41,12 +113,18 @@ export async function generateImage(
     return { success: false, error: parsed.error.issues[0].message };
   }
 
+  const { prompt, model, imageSize, referenceImages } = parsed.data;
+
+  // 本地 Draw Things:在 Google key 檢查「之前」分流 —— 本地生圖不需要雲端 key
+  if (model === LOCAL_IMAGE_MODEL) {
+    return generateImageLocal(prompt, imageSize);
+  }
+
   const apiKey = process.env.GOOGLE_AI_API_KEY;
   if (!apiKey || apiKey === "your_api_key_here") {
     return { success: false, error: "請先設定 GOOGLE_AI_API_KEY 環境變數" };
   }
 
-  const { prompt, model, imageSize, referenceImages } = parsed.data;
   const fullPrompt = `Generate an image in ${imageSize} aspect ratio: ${prompt}`;
 
   // requestParts:先放參考圖(inlineData),再放文字指示
